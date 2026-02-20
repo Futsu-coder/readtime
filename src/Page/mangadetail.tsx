@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Play, BookOpen, Heart } from 'lucide-react';
-import { client } from "../client";
+import { API_URL } from "../client"; 
 import { NovelImage } from "../components/novelimage";
 
-interface Novel {
+interface Manga {
     id: number;
     title: string;
     description: string;
@@ -16,120 +16,102 @@ interface Novel {
     cover_image?: string | null; 
 }
 
-interface Chapter {
+interface MangaChapter {
     id: number;
     title: string;
+    chapter_number: number;
     created_at: string;
 }
 
-interface NoveldetailResponse {
-    novel: Novel;
-    chapters: Chapter[];
-}
-
-export function Noveldetailpage() {
-    const { id } = useParams();
+export function MangaDetailPage() {
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    
-    // 🌟 States
-    const [novel, setNovel] = useState<Novel | null>(null);
-    const [chapters, setChapters] = useState<Chapter[]>([]);
+    const [manga, setManga] = useState<Manga | null>(null);
+    const [chapters, setChapters] = useState<MangaChapter[]>([]);
     const [isBookmarked, setIsBookmarked] = useState(false);
-    const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-    const [isHover, setIsHover] = useState(false); // สำหรับ Hover ชื่อผู้แต่ง
-
+    const [isHover, setIsHover] = useState(false); 
+    const [currentUserId] = useState<number | null>(() => {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload?.id || null;
+        } catch { return null; }
+    });
     const isLoggedIn = !!localStorage.getItem('token');
 
-    // 🌟 1. ดึง ID ผู้ใช้จาก Token เพื่อเช็คสิทธิ์
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                if (payload && payload.id) {
-                    setCurrentUserId(payload.id);
-                }
-            } catch (e) {
-                console.error("Token parse error", e);
-            }
-        }
-    }, []);
-
-    // 🌟 2. ดึงข้อมูลนิยายและตอนต่างๆ
     useEffect(() => {
         const fetchData = async () => {
+            if (!id) return;
             try {
-                const token = localStorage.getItem('token');
-                const res = await client.api.public.novels[':id'].$get(
-                    { param: { id: id! } },
-                    { headers: { authorization: `Bearer ${token}` } }
-                );
-                const data = await res.json() as unknown as NoveldetailResponse;
+                const res = await fetch(`${API_URL}/api/public/mangas/${id}`);
                 if (res.ok) {
-                    setNovel(data.novel || {});
+                    const data = await res.json();
+                    setManga(data.manga);
                     setChapters(data.chapters || []);
                 }
-            } catch (err) {
-                console.error(err);
-            }
+            } catch (err) { console.error(err); }
         };
         fetchData();
     }, [id]);
 
-    // 🌟 3. ดึงสถานะ Bookmark
     useEffect(() => {
         if (isLoggedIn && id) {
-            client.api.protected.novels[':id']['bookmark-status'].$get(
-                { param: { id } },
-                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-            ).then(res => res.json()).then(data => setIsBookmarked(data.isBookmarked));
+            fetch(`${API_URL}/api/protected/manga/${id}/bookmark-status`, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            })
+            .then(res => res.json())
+            .then(data => setIsBookmarked(data.isBookmarked))
+            .catch(err => console.error(err));
         }
     }, [id, isLoggedIn]);
 
-    // 🌟 4. ฟังก์ชันกด Bookmark
     const handleBookmark = async () => {
-        if (!isLoggedIn) return alert("กรุณาเข้าสู่ระบบก่อนเก็บผลงานเข้าชั้นครับ");
-        
-        const res = await client.api.protected.novels[':id'].bookmark.$post(
-            { param: { id: id! } },
-            { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-        );
+        if (!isLoggedIn) return alert("กรุณาเข้าสู่ระบบก่อนเก็บผลงานเข้าชั้น");
+        const res = await fetch(`${API_URL}/api/protected/manga/${id}/bookmark`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
         if (res.ok) {
             const data = await res.json();
             setIsBookmarked(data.isBookmarked);
         }
     };
-
-    if (!novel) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#888' }}>⏳ กำลังโหลดรายละเอียด...</div>;
+    if (!manga) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#888' }}>กำลังโหลดรายละเอียด...</div>;
 
     return (
         <div style={containerStyle}>
             <button onClick={() => navigate(-1)} style={backBtn}>
                 <ChevronLeft size={20} /> ย้อนกลับ
-            </button>            
+            </button>
             <div style={headerCard}>
                 <div style={coverBox}>
                     <NovelImage 
-                        src={novel.cover_image} 
+                        src={manga.cover_image} 
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                     />
                 </div>
                 <div style={infoBox}>
-                    <h1 style={titleText}>{novel.title}</h1>
+                    <div style={{ marginBottom: '10px' }}>
+                        <span style={typeTag}>มังงะ</span>
+                    </div>
+                    <h1 style={titleText}>{manga.title}</h1>
                     <p 
                         style={{ ...authorText, cursor: 'pointer', textDecoration: isHover ? 'underline' : 'none' }} 
                         onClick={() => {}}
                         onMouseEnter={() => setIsHover(true)}
                         onMouseLeave={() => setIsHover(false)}
                     >
-                        โดย: {novel.author || 'ไม่ระบุผู้แต่ง'}
+                        ผู้วาด: {manga.author || 'ไม่ระบุผู้วาด'}
                     </p>
                     <div style={tagGroup}>
-                        <span style={tag}>{novel.category}</span>
+                        <span style={tag}>{manga.category}</span>
                     </div>
+                    <p style={{ color: '#494949'}}>เรื่องย่อ :</p>
                     <div 
+                        
                         style={descText} 
-                        dangerouslySetInnerHTML={{ __html: novel.description || '<p>ไม่มีเรื่องย่อ...</p>' }} 
+                        dangerouslySetInnerHTML={{ __html: manga.description || '<p>ไม่มีเรื่องย่อ...</p>' }} 
                     />
                     <div style={statsRow}>
                         <span 
@@ -151,45 +133,44 @@ export function Noveldetailpage() {
 
                         <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#888' }}>
                             <BookOpen size={18} color="#aaa" /> 
-                            {novel.view_count.toLocaleString()} ครั้ง
+                            {manga.view_count.toLocaleString()} ครั้ง
                         </span>
                     </div>
                 </div>
             </div>
             <div style={listSection}>
                 <h3 style={sectionTitle}>รายการตอนทั้งหมด ({chapters.length})</h3>
-                
                 {chapters.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '30px', color: '#999' }}>ยังไม่มีตอนนิยาย... รอผู้แต่งมาอัปเดตนะ!</div>
+                    <div style={{ textAlign: 'center', padding: '30px', color: '#999' }}>ยังไม่มีตอนมังงะ...</div>
                 ) : (
-                    chapters.map((chapter, index) => (
+                    chapters.map((chap) => (
                         <div 
-                            key={chapter.id} 
+                            key={chap.id} 
                             style={episodeItem} 
-                            onClick={() => navigate(`/novel/${novel.id}/chapters/${chapter.id}`)}
+                            onClick={() => navigate(`/manga/${id}/chapters/${chap.id}`)}
                         >
                             <div>
                                 <div style={epTitle}>
-                                    <span style={{ color: '#9b67bd', marginRight: '8px', fontWeight: 'bold' }}>
-                                        EP.{index + 1}
+                                    <span style={{ color: '#ff7b00', marginRight: '8px', fontWeight: 'bold' }}>
+                                        ตอนที่ {chap.chapter_number}
                                     </span>
-                                    {chapter.title}
+                                    {chap.title}
                                 </div>
                                 <div style={epDate}>
-                                    {new Date(chapter.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                    {new Date(chap.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })}
                                 </div>
                             </div>
-                            <Play size={18} color="#9b67bd" style={{ flexShrink: 0 }} />
+                            <Play size={18} color="#ff7b00" style={{ flexShrink: 0 }} />
                         </div>
                     ))
                 )}
-                {currentUserId === novel.owner_id && (
+                {currentUserId === manga.owner_id && (
                     <div style={{ marginTop: '30px', textAlign: 'center', borderTop: '1px dashed #e0e0e0', paddingTop: '25px' }}>
                         <button 
-                            onClick={() => navigate(`/novel/${novel.id}/chapters`)}
-                            style={{ padding: '12px 30px', background: '#28a745', color: 'white', border: 'none', borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(40, 167, 69, 0.2)' }}
+                            onClick={() => navigate(`/manga/${id}/chapters`)}
+                            style={{ padding: '12px 30px', background: '#ff7b00', color: 'white', border: 'none', borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(255, 123, 0, 0.2)' }}
                         >
-                            + เขียนตอนใหม่เพิ่ม
+                            + อัปโหลดตอนใหม่เพิ่ม
                         </button>
                     </div>
                 )}
@@ -199,19 +180,20 @@ export function Noveldetailpage() {
 }
 
 const containerStyle: React.CSSProperties = { maxWidth: '1000px', margin: '40px auto', padding: '0 30px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
-const backBtn: React.CSSProperties = { border: 'none', background: 'none', color: '#9b67bd', cursor: 'pointer', display: 'flex', alignItems: 'center', marginBottom: '20px', fontWeight: 'bold', fontSize: '15px', padding: 0 };
+const backBtn: React.CSSProperties = { border: 'none', background: 'none', color: '#ff7b00', cursor: 'pointer', display: 'flex', alignItems: 'center', marginBottom: '20px', fontWeight: 'bold', fontSize: '15px', padding: 0 };
 const headerCard: React.CSSProperties = { display: 'flex', gap: '40px', backgroundColor: '#fff', padding: '35px', borderRadius: '25px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', marginBottom: '40px', flexWrap: 'wrap' };
-const coverBox: React.CSSProperties = { width: '240px', height: '340px', backgroundColor: '#f9f9f9', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #f0f0f0', overflow: 'hidden', flexShrink: 0, margin: '0 auto' };
+const coverBox: React.CSSProperties = { width: '240px', height: '340px', backgroundColor: '#fff9f2', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #ffe8cc', overflow: 'hidden', flexShrink: 0, margin: '0 auto' };
 const infoBox: React.CSSProperties = { flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' };
+const typeTag: React.CSSProperties = { background: '#ff7b00', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'inline-block' };
 const titleText: React.CSSProperties = { fontSize: '32px', margin: '0 0 10px 0', color: '#222', fontWeight: 800, lineHeight: 1.2 };
-const authorText: React.CSSProperties = { color: '#9b67bd', fontWeight: '500', marginBottom: '20px', fontSize: '15px' };
+const authorText: React.CSSProperties = { color: '#ff7b00', fontWeight: '500', marginBottom: '20px', fontSize: '15px' };
 const tagGroup: React.CSSProperties = { display: 'flex', gap: '10px', marginBottom: '25px', flexWrap: 'wrap' };
-const tag: React.CSSProperties = { backgroundColor: '#f3ebff', padding: '6px 18px', borderRadius: '20px', fontSize: '13px', color: '#6a4c93', fontWeight: 'bold' };
+const tag: React.CSSProperties = { backgroundColor: '#fff4e6', padding: '6px 18px', borderRadius: '20px', fontSize: '13px', color: '#ff922b', fontWeight: 'bold' };
 
-const descText: React.CSSProperties = { lineHeight: '1.7', color: '#555', marginBottom: '30px', fontSize: '15px', backgroundColor: '#fafafa', padding: '20px', borderRadius: '12px' };
+const descText: React.CSSProperties = { lineHeight: '1.7', color: '#555', marginBottom: '30px', fontSize: '15px', backgroundColor: '#fafafa', padding: '20px', borderRadius: '12px' , border: '1px solid #bfbcbc'};
 
 const statsRow: React.CSSProperties = { display: 'flex', gap: '25px', color: '#aaa', fontSize: '15px', marginTop: 'auto' };
-const listSection: React.CSSProperties = { backgroundColor: '#fcfaff', padding: '35px', borderRadius: '25px', border: '1px solid #f3ebff' };
+const listSection: React.CSSProperties = { backgroundColor: '#fffbf5', padding: '35px', borderRadius: '25px', border: '1px solid #fff4e6' };
 const sectionTitle: React.CSSProperties = { margin: '0 0 25px 0', color: '#333', fontSize: '22px' };
 const episodeItem: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 25px', backgroundColor: '#fff', borderRadius: '15px', marginBottom: '12px', cursor: 'pointer', border: '1px solid #f0f0f0', transition: '0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' };
 const epTitle: React.CSSProperties = { fontWeight: '600', color: '#444', fontSize: '16px' };

@@ -1,197 +1,216 @@
-import { useState, useEffect } from "react"
-import { Link } from "react-router-dom"
-import { client } from "../client"
-
-// ประกาศ Type ให้ชัดเจน
-interface Novel {
-    id: number
-    title: string
-    category: string
-    created_at: string
-    description: string
-}
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Book, Image as ImageIcon, Trash2, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react';
+import { client, API_URL } from "../client";
 
 export function MyNovelsPage() {
-    const [novels, setNovels] = useState<Novel[]>([])
-    const [loading, setLoading] = useState(true)
+    const navigate = useNavigate();
+    const [works, setWorks] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+    const [selectedType, setSelectedType] = useState<'novel' | 'manga' | null>(null);
+    const [showManageDropdown, setShowManageDropdown] = useState(false);
+    const [activeFilter, setActiveFilter] = useState<'all' | 'novel' | 'manga'>('all'); 
+    const typeDropdownRef = useRef<HTMLDivElement>(null);
+    const manageDropdownRef = useRef<HTMLDivElement>(null);
 
-    // 1. ดึงข้อมูลนิยายทั้งหมด (เฉพาะของฉัน)
     useEffect(() => {
-        const fetchMyNovels = async () => {
+        const fetchAllMyWorks = async () => {
             try {
-                const token = localStorage.getItem('token')
-                const res = await client.api.protected.novels.$get(
-                    {},
-                    { headers: { Authorization: `Bearer ${token}` } }
-                )
-                
-                if (res.ok) {
-                    const data = await res.json()
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    setNovels((data as any).novels)
-                }
-            } catch (err) {
-                console.error(err)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchMyNovels()
-    }, [])
+                const token = localStorage.getItem('token');
+                const headers = { Authorization: `Bearer ${token}` };
 
-    // 2. ฟังก์ชันลบนิยาย
-    const handleDelete = async (id: number, title: string) => {
-        const confirmDelete = confirm(`⚠️ คุณแน่ใจไหมว่าจะลบเรื่อง "${title}" ?\n(ลบแล้วกู้คืนไม่ได้นะ!)`)
-        if (!confirmDelete) return
+                const [novelsRes, mangasRes] = await Promise.all([
+                    client.api.protected.novels.$get({}, { headers }),
+                    client.api.protected.manga.$get({}, { headers })
+                ]);
+
+                let combined: any[] = [];
+                if (novelsRes.ok) {
+                    const data = await novelsRes.json() as any;
+                    combined = [...combined, ...(data.novels || []).map((n: any) => ({ ...n, type: 'novel' }))];
+                }
+                if (mangasRes.ok) {
+                    const data = await mangasRes.json() as any;
+                    combined = [...combined, ...(data.mangas || []).map((m: any) => ({ ...m, type: 'manga' }))];
+                }
+                
+                setWorks(combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAllMyWorks();
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) setShowTypeDropdown(false);
+            if (manageDropdownRef.current && !manageDropdownRef.current.contains(event.target as Node)) setShowManageDropdown(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleDelete = async (id: number, title: string, type: 'novel' | 'manga', e: React.MouseEvent) => {
+        e.stopPropagation();
+        
+        const confirmDelete = window.confirm(`แน่ใจไหมว่าจะลบ ${type === 'manga' ? 'มังงะ' : 'นิยาย'} เรื่อง "${title}" ?\n(การลบจะทำให้ตอนทั้งหมดหายไปด้วย และไม่สามารถกู้คืนได้)`);
+        if (!confirmDelete) return;
 
         try {
-            const token = localStorage.getItem('token')
-            const res = await client.api.protected.novels[':id'].$delete(
-                { param: { id: id.toString() } },
-                { headers: { Authorization: `Bearer ${token}` } }
-            )
+            const token = localStorage.getItem('token');
+            const url = type === 'manga' ? `${API_URL}/api/protected/manga/${id}` : `${API_URL}/api/protected/novels/${id}`;
+
+            const res = await fetch(url, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
             if (res.ok) {
-                // ลบออกจาก State ทันที (หน้าจอจะอัปเดตเองโดยไม่ต้อง Refresh)
-                setNovels(prev => prev.filter(n => n.id !== id))
-                alert("🗑️ ลบเรียบร้อย")
+                setWorks(prev => prev.filter(work => !(work.id === id && work.type === type)));
+                alert("ลบผลงานเรียบร้อยแล้ว");
             } else {
-                alert("ลบไม่สำเร็จ")
+                const data = await res.json() as any;
+                alert(`ลบไม่สำเร็จ: ${data.error || 'เกิดข้อผิดพลาด'}`);
             }
         } catch (err) {
-            console.error(err)
-            alert("เชื่อมต่อ Server ไม่ได้")
+            console.error(err);
+            alert("เชื่อมต่อ Server ไม่ได้");
         }
-    }
+    };
 
-    // --- Styles (ตกแต่งให้ดูดี) ---
-    const pageStyle = { maxWidth: '800px', margin: '40px auto', padding: '20px' }
-    const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }
-    
-    // การ์ดนิยาย
-    const cardStyle = { 
-        background: 'white', 
-        padding: '20px', 
-        borderRadius: '12px', 
-        boxShadow: '0 2px 8px rgba(0,0,0,0.05)', 
-        marginBottom: '15px',
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        border: '1px solid #eee',
-        transition: '0.2s'
-    }
+    const displayWorks = works.filter(w => activeFilter === 'all' ? true : w.type === activeFilter);
+    const getFilterText = () => {
+        if (activeFilter === 'novel') return 'นิยาย';
+        if (activeFilter === 'manga') return 'มังงะ';
+        return 'ทั้งหมด';
+    };
 
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>
+    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#9b67bd', fontSize: '1.2rem' }}>⏳ กำลังโหลดข้อมูลงานเขียน...</div>;
 
     return (
-        <div style={pageStyle}>
-            {/* Header ส่วนบน */}
-            <div style={headerStyle}>
-                <div>
-                    <h1 style={{ color: '#6a4c93', margin: 0 }}>Writing ✏️</h1>
-                    <p style={{ color: '#666', margin: '5px 0 0 0' }}>จัดการงานเขียนของคุณ</p>
+        <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 30px', fontFamily: "'Kanit', 'Sarabun', sans-serif" }}>
+            
+            <button onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', gap: '8px', marginBottom: '20px', padding: 0 }}>
+                <ChevronLeft size={28} color="#bc7df2" />
+                <span style={{ color: '#bc7df2', fontSize: '18px', fontWeight: '600' }}>ย้อนกลับ</span>
+            </button>
+            <h2 style={{ fontSize: '38px', color: '#9b67bd', fontWeight: 'bold', marginBottom: '40px' }}>Writing ✎</h2>
+            <div style={{ backgroundColor: '#fcfcfc', borderRadius: '25px', padding: '30px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #f0f0f0' }}>
+                <div style={{ borderBottom: '1px solid #eee', marginBottom: '25px', paddingBottom: '10px' }}>
+                    <h3 style={{ fontSize: '22px', margin: 0, color: '#333' }}>จัดการงานเขียน</h3>
                 </div>
-                <div style={{ background: '#f0f0f0', padding: '5px 15px', borderRadius: '20px', fontSize: '0.9rem', color: '#666' }}>
-                    ทั้งหมด <strong>{novels.length}</strong> เรื่อง
-                </div>
-            </div>
-
-            {/* รายการนิยาย */}
-            <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '16px', minHeight: '300px' }}>
-                
-                {novels.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                        <p>ยังไม่มีงานเขียนเลย...</p>
-                        <p>เริ่มต้นสร้างจินตนาการของคุณได้ที่ปุ่มด้านล่าง 👇</p>
-                    </div>
-                ) : null}
-
-                {novels.map((novel) => (
-                    <div key={novel.id} style={cardStyle}>
-                        {/* ส่วนข้อมูล (ซ้าย) */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: 1 }}>
-                            {/* รูปปกจำลอง */}
-                            <div style={{ 
-                                width: '60px', 
-                                height: '80px', 
-                                background: 'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', 
-                                borderRadius: '6px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '20px'
-                            }}>
-                                📖
-                            </div>
-                            
-                            <div>
-                                <Link to={`/novels/${novel.id}`} style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#333', textDecoration: 'none', display: 'block' }}>
-                                    {novel.title}
-                                </Link>
-                                <span style={{ fontSize: '0.8rem', background: '#eee', padding: '2px 8px', borderRadius: '4px', color: '#666', marginTop: '5px', display: 'inline-block' }}>
-                                    {novel.category}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* ส่วนปุ่มจัดการ (ขวา) */}
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            {/* ปุ่มแก้ไข */}
-                            <Link to={`/novels/${novel.id}/editnovel`}>
-                                <button style={{ 
-                                    padding: '8px 15px', 
-                                    background: '#fff', 
-                                    border: '1px solid #ddd', 
-                                    borderRadius: '6px', 
-                                    cursor: 'pointer',
-                                    color: '#555',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    ✏️ แก้ไข
-                                </button>
-                            </Link>
-
-                            {/* ปุ่มลบ */}
+                <div style={{ backgroundColor: '#f5f5f5', borderRadius: '20px', padding: '25px' }}>     
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
+                        <div style={{ position: 'relative' }} ref={manageDropdownRef}>
                             <button 
-                                onClick={() => handleDelete(novel.id, novel.title)}
-                                style={{ 
-                                    padding: '8px 12px', 
-                                    background: '#fff', 
-                                    border: '1px solid #ffcccc', 
-                                    borderRadius: '6px', 
-                                    cursor: 'pointer',
-                                    color: '#dc3545',
-                                    fontSize: '0.9rem'
-                                }}
-                                title="ลบนิยาย"
+                                onClick={() => setShowManageDropdown(!showManageDropdown)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 25px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', color: showManageDropdown ? '#9b67bd' : '#333', transition: '0.2s' }}
                             >
-                                🗑️
+                                {getFilterText()} {showManageDropdown ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                             </button>
+                            {showManageDropdown && (
+                                <div style={{ position: 'absolute', top: '110%', left: 0, width: '180px', backgroundColor: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderRadius: '12px', zIndex: 20, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
+                                    <div onClick={() => { setActiveFilter('all'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'all' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'all' ? 'bold' : 'normal' }}>ทั้งหมด</div>
+                                    <div onClick={() => { setActiveFilter('novel'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'novel' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'novel' ? 'bold' : 'normal' }}>นิยาย</div>
+                                    <div onClick={() => { setActiveFilter('manga'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'manga' ? '#9b67bd' : '#555', cursor: 'pointer', fontWeight: activeFilter === 'manga' ? 'bold' : 'normal' }}>การ์ตูน</div>
+                                </div>
+                            )}
                         </div>
+                        <span style={{ fontSize: '15px', color: '#777', fontWeight: '600' }}>ทั้งหมด ( {displayWorks.length} ) เรื่อง</span>
                     </div>
-                ))}
-            </div>
+                    {displayWorks.length > 0 ? displayWorks.map((work) => (
+                        <div 
+                            key={`${work.type}-${work.id}`} 
+                            onClick={() => navigate(`/${work.type}/${work.id}/edit`)} 
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '15px 20px', borderRadius: '15px', marginBottom: '15px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid transparent', transition: '0.2s' }}
+                            onMouseOver={e => e.currentTarget.style.borderColor = '#e0c3fc'}
+                            onMouseOut={e => e.currentTarget.style.borderColor = 'transparent'}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{ 
+                                    width: '55px', height: '75px', borderRadius: '8px', marginRight: '20px', 
+                                    backgroundImage: work.cover_image ? `url(${API_URL}${work.cover_image})` : 'none',
+                                    backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee', flexShrink: 0
+                                }}>
+                                    {!work.cover_image && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#aaa' }}>No Cover</div>}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>{work.title}</span>
+                                    <span style={{ fontSize: '13px', color: '#888' }}>
+                                        <span style={{ color: work.type === 'novel' ? '#9b67bd' : '#ff7b00', fontWeight: 'bold', marginRight: '10px' }}>
+                                            {work.type === 'novel' ? '📖 นิยาย' : '🎨 มังงะ'}
+                                        </span>
+                                        สร้างเมื่อ {new Date(work.created_at).toLocaleDateString('th-TH')}
+                                    </span>
+                                </div>
+                            </div>
 
-            {/* ปุ่มเพิ่มงานเขียน (Floating Button แบบเท่ๆ) */}
-            <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                <Link to="/create">
-                    <button style={{ 
-                        background: 'linear-gradient(90deg, #d084ff 0%, #a066ff 100%)', 
-                        color: 'white', 
-                        padding: '12px 40px', 
-                        fontSize: '1.1rem',
-                        border: 'none', 
-                        borderRadius: '30px', 
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 15px rgba(160, 102, 255, 0.4)',
-                        fontWeight: 'bold',
-                        transition: 'transform 0.2s'
-                    }}>
-                        + เพิ่มงานเขียนใหม่
-                    </button>
-                </Link>
+                            <div style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
+                                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#4caf50', background: '#e8f5e9', padding: '4px 12px', borderRadius: '20px' }}>
+                                    เผยแพร่แล้ว
+                                </span>
+                                <button 
+                                    onClick={(e) => handleDelete(work.id, work.title, work.type, e)} 
+                                    style={{ background: '#fff5f5', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '8px', transition: '0.2s' }}
+                                    onMouseOver={e => e.currentTarget.style.background = '#ffe5e5'}
+                                    onMouseOut={e => e.currentTarget.style.background = '#fff5f5'}
+                                    title="ลบผลงาน"
+                                >
+                                    <Trash2 size={20} color="#ff4d4f" />
+                                </button>
+                            </div>
+                        </div>
+                    )) : (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px', backgroundColor: '#fff', borderRadius: '15px', color: '#888', fontSize: '16px', border: '1px dashed #ccc' }}>
+                            ไม่มีผลงานในหมวดหมู่นี้
+                        </div>
+                    )}
+                </div>
             </div>
+            <div style={{ textAlign: 'center', marginTop: '60px', position: 'relative' }}>
+                
+                {showTypeDropdown && (
+                    <div ref={typeDropdownRef} style={{ position: 'absolute', bottom: '110px', left: '50%', transform: 'translateX(-50%)', width: '420px', backgroundColor: '#fff', padding: '35px', borderRadius: '35px', boxShadow: '0 15px 50px rgba(0,0,0,0.15)', zIndex: 100, border: '1px solid #eee' }}>
+                        <h3 style={{ marginBottom: '25px', fontSize: '22px', color: '#333' }}>เลือกประเภทงานเขียน</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+                            <div 
+                                onClick={() => setSelectedType('novel')} 
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px 15px', border: '2px solid', borderRadius: '20px', cursor: 'pointer', gap: '12px', transition: '0.2s', borderColor: selectedType === 'novel' ? '#9b67bd' : '#eee', backgroundColor: selectedType === 'novel' ? '#fcf8ff' : '#fff' }}
+                            >
+                                <Book color={selectedType === 'novel' ? '#9b67bd' : '#aaa'} size={36} /> 
+                                <span style={{ fontSize: '18px', fontWeight: 'bold', color: selectedType === 'novel' ? '#9b67bd' : '#666' }}>นิยาย</span>
+                            </div>
+                            <div 
+                                onClick={() => setSelectedType('manga')} 
+                                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px 15px', border: '2px solid', borderRadius: '20px', cursor: 'pointer', gap: '12px', transition: '0.2s', borderColor: selectedType === 'manga' ? '#13c2c2' : '#eee', backgroundColor: selectedType === 'manga' ? '#f0ffff' : '#fff' }}
+                            >
+                                <ImageIcon color={selectedType === 'manga' ? '#13c2c2' : '#aaa'} size={36} /> 
+                                <span style={{ fontSize: '18px', fontWeight: 'bold', color: selectedType === 'manga' ? '#13c2c2' : '#666' }}>การ์ตูน</span>
+                            </div>
+                        </div>
+                        <button 
+                            disabled={!selectedType} 
+                            onClick={() => { if (selectedType === 'novel') navigate('/createnovel'); else navigate('/createmanga'); }} 
+                            style={{ width: '100%', padding: '16px', borderRadius: '30px', border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '18px', cursor: selectedType ? 'pointer' : 'not-allowed', backgroundColor: selectedType === 'novel' ? '#9b67bd' : selectedType === 'manga' ? '#13c2c2' : '#ccc', transition: '0.2s' }}
+                        >
+                            ยืนยัน
+                        </button>
+                    </div>
+                )}     
+                <button 
+                    onClick={() => setShowTypeDropdown(!showTypeDropdown)} 
+                    style={{ backgroundColor: '#bc7df2', color: '#fff', border: 'none', padding: '18px 60px', borderRadius: '50px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 8px 25px rgba(188, 125, 242, 0.4)', transition: '0.2s' }}
+                    onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                    onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                    {showTypeDropdown ? '✕ ปิดหน้าต่าง' : '+ เพิ่มงานเขียน'}
+                </button>
+            </div>
+            
         </div>
-    )
+    );
 }

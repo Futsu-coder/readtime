@@ -1,48 +1,63 @@
-// src/App.tsx
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Navbar } from './components/navbar'
-import { Auth } from './Page/auth'
-import { CreateNovel } from './Page/createNovel'
-import { MyNovelsPage } from './Page/novelpage'
-import { AddChapterPage } from './Page/addchapter'
-import { Noveldetailpage } from './Page/noveldetail'
-import { Readchapterpage } from './Page/readnovel'
-import { EditNovelPage } from './Page/editnovel'
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+
+import { HomePage } from "./Page/homepage";
+import { Navbar } from "./components/navbar";
+import { Login } from "./Page/login";
+import { Register } from "./Page/register";
+import { ProfilePage } from "./Page/profile";
+import { HistoryPage } from "./Page/history";
+
+import { MyBookmarksPage } from "./Page/mybookmark";
+import { MyNovelsPage } from "./Page/novelpage";
+
+import { CreateNovel } from "./Page/createNovel";
+import { AddChapterPage } from "./Page/addchapter";
+import { Noveldetailpage } from "./Page/noveldetail";
+import { Readchapterpage } from "./Page/readnovel";
+import { EditNovelPage } from "./Page/editnovel";
+import { EditChapterPage } from "./Page/editchapter";
+
+
+import { CreateMangaPage } from "./Page/createManga";
+import { CreateMangaChapterPage } from "./Page/createMangaChapter";
+import { MangaDetailPage } from "./Page/mangadetail";
+import { ReadMangaPage } from "./Page/readmanga";
+import { EditMangaPage } from "./Page/editmanga";
+import { EditMangaChapterPage } from "./Page/editchaptermanga";
+
+
 
 function App() {
-  // เช็คว่ามี Token ไหม (แบบง่ายๆ)
   const token = localStorage.getItem('token')
-
-  return (
+  return(
     <BrowserRouter>
-      {/* Navbar จะอยู่ทุกหน้า */}
-      <Navbar />
-      
-      <div style={{ padding: 20 }}>
+      <Navbar/> 
+      <div style={{ /* padding: 20 */ }}>
         <Routes>
-          {/* หน้าแรก: ถ้าล็อกอินแล้วไปหน้าเขียน ถ้ายังให้ไป Login */}
-          <Route path="/" element={token ? <Navigate to="/my-novels" /> : <Navigate to="/login" />} />
-          
-          {/* หน้า Login */}
-          <Route path="/login" element={<Auth />} />
-          
-          {/* หน้าเขียนนิยาย (ส่ง token ไปให้ด้วย ถ้าไม่มีให้ string ว่าง) */}
-          <Route path="/create" element={token ? <CreateNovel token={token} /> : <Navigate to="/login" />} />
+          <Route path="/" element={< HomePage />} />
+          <Route path="/profile" element={token ? <ProfilePage/> : <Navigate to="/login"/>}/>
 
-          <Route path="/my-novels" element={token ? <MyNovelsPage /> : <Navigate to="/login" />} />
+          <Route path="/login" element={<Login/>}/>
+          <Route path="/register" element={<Register/>}/>
+          <Route path="/createnovel" element={token ? <CreateNovel /> : <Navigate to="/login" />} />
+          <Route path="/dashborad" element={token ? <MyNovelsPage /> : <Navigate to="/login" />} />
+          <Route path="/novel/:id/chapters" element={token ? <AddChapterPage />:<Navigate to="login"/>} />
+          <Route path="/novel/:id/edit/" element={token ? <EditNovelPage/> : <Navigate to="/login"/>} /> 
+          <Route path="/novel/:id" element={<Noveldetailpage/>}/>
+          <Route path="/novel/:id/chapters/:chapterId" element={<Readchapterpage/>}/>
+          <Route path="/novel/:id/chapters/:chapterId/edit" element={token ? <EditChapterPage /> : <Navigate to="/login"/>} />
+          <Route path="/my-bookmarks" element={token ? <MyBookmarksPage /> : <Navigate to= "/login"/>} />
 
-          <Route path="/novels/:id/chapters" element={token ? <AddChapterPage /> : <Navigate to="/login" />} />
-
-          <Route path="/novels/:id" element={<Noveldetailpage/>}></Route>
-
-          <Route path="/novels/:id/chapters/:chapterId" element={<Readchapterpage />} /> 
-
-          <Route path="/novels/:id/editnovel/" element={token ? <EditNovelPage/> : <Navigate to="/login"/>} /> 
-          
+          <Route path="/createmanga" element={token ? <CreateMangaPage/> : <Navigate to="/login"/>}/> 
+          <Route path="/manga/:id/chapters" element={token ? <CreateMangaChapterPage /> : <Navigate to="/login"/>} />
+          <Route path="/manga/:id/"element={<MangaDetailPage/>}/>
+          <Route path="/manga/:id/chapters/:chapterId" element={<ReadMangaPage />} />
+          <Route path="/manga/:id/edit" element={token ? <EditMangaPage /> : <Navigate to="/login"/>} />
+          <Route path="/manga/:id/chapter/:chapterId/edit" element={token ? <EditMangaChapterPage/> : <Navigate to="/login"/>}/>
+          <Route path="/history" element={token ?<HistoryPage />  : <Navigate to="/login"/>} />
         </Routes>
       </div>
     </BrowserRouter>
   )
 }
-
 export default App

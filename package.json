@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "hono": "^4.11.5",
+    "lucide-react": "^0.575.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-quill-new": "^3.8.3",
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
