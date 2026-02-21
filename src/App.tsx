@@ -8,7 +8,7 @@ import { ProfilePage } from "./Page/profile";
 import { HistoryPage } from "./Page/history";
 
 import { MyBookmarksPage } from "./Page/mybookmark";
-import { MyNovelsPage } from "./Page/novelpage";
+import { MyDashborad } from "./Page/dashborad";
 
 import { CreateNovel } from "./Page/createNovel";
 import { AddChapterPage } from "./Page/addchapter";
@@ -40,7 +40,7 @@ function App() {
           <Route path="/login" element={<Login/>}/>
           <Route path="/register" element={<Register/>}/>
           <Route path="/createnovel" element={token ? <CreateNovel /> : <Navigate to="/login" />} />
-          <Route path="/dashborad" element={token ? <MyNovelsPage /> : <Navigate to="/login" />} />
+          <Route path="/dashborad" element={token ? <MyDashborad /> : <Navigate to="/login" />} />
           <Route path="/novel/:id/chapters" element={token ? <AddChapterPage />:<Navigate to="login"/>} />
           <Route path="/novel/:id/edit/" element={token ? <EditNovelPage/> : <Navigate to="/login"/>} /> 
           <Route path="/novel/:id" element={<Noveldetailpage/>}/>

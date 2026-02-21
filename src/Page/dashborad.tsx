@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Book, Image as ImageIcon, Trash2, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react';
 import { client, API_URL } from "../client";
 
-export function MyNovelsPage() {
+export function MyDashborad() {
     const navigate = useNavigate();
     const [works, setWorks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);

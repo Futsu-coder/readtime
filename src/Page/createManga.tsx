@@ -1,9 +1,8 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../client"; 
-
-// 🌟 นำเข้า
 import { RichTextEditor } from "../components/RichtextEditor";
+import { ChevronLeft, Plus } from 'lucide-react';
 
 export function CreateMangaPage() {
     const navigate = useNavigate();
@@ -55,45 +54,117 @@ export function CreateMangaPage() {
             console.log(err)
             setIsLoading(false); setErrorMsg("Error"); }
     };
+
     return (
-        <div style={{ maxWidth: '800px', margin: '40px auto', padding: '0 20px', fontFamily: "'Sarabun', sans-serif" }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                <h1 style={{ color: '#ff7b00', margin: '0 0 10px 0', fontSize: '2.2rem' }}>สร้างเรื่องมังงะใหม่</h1>
+        <div style={pageContainer}>
+            <div style={headerNav}>
+                <button type="button" onClick={() => navigate(-1)} style={backBtn}>
+                    <ChevronLeft size={20} /> ย้อนกลับ
+                </button>
             </div>
-            <div style={{ background: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-                <form onSubmit={handleCreate}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '30px', paddingBottom: '25px', borderBottom: '1px dashed #eee' }}>
-                         <div onClick={() => fileInputRef.current?.click()} style={{ width: '160px', height: '220px', background: '#f5f5f5', borderRadius: '12px', border: coverPreview ? 'none' : '2px dashed #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'pointer' }}>
-                            {coverPreview ? <img src={coverPreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : "เลือกรูป"}
+
+            <form onSubmit={handleCreate} style={mainContent}>
+                <div style={sectionWhite}>
+                    <div style={flexRow}>
+                        <div style={{ position: 'relative' }}>
+                            <div 
+                                style={{
+                                    ...coverBox, 
+                                    backgroundImage: coverPreview ? `url(${coverPreview})` : 'none',
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    border: coverPreview ? 'none' : '2px dashed #eee'
+                                }} 
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                {!coverPreview && (
+                                    <div style={plusWrapper}>
+                                        <div style={plusCircle}><Plus size={30} color="#bc7df2" /></div>
+                                        <span style={uploadHint}>อัพโหลดรูปปก</span>
+                                    </div>
+                                )}
+                            </div>
+                            <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={handleFileChange} 
+                                ref={fileInputRef} 
+                                style={{ display: 'none' }} 
+                            />
                         </div>
-                        <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} style={{ display: 'none' }} />
+                        <div style={inputArea}>
+                            <div style={fieldGroup}>
+                                <label style={purpleLabel}>เพิ่มชื่อเรื่อง</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="พิมพ์ชื่อเรื่องที่นี่" 
+                                    style={textInput} 
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div style={fieldGroup}>
+                                <label style={purpleLabel}>หมวดหมู่</label>
+                                <select 
+                                    value={category} 
+                                    onChange={(e) => setCategory(e.target.value)} 
+                                    style={{...textInput, appearance: 'auto', color: '#333'}}
+                                >
+                                    <option value="Action">แอคชั่น</option>
+                                    <option value="Fantasy">แฟนตาซี</option>
+                                    <option value="Comedy">ตลก</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div style={{ marginBottom: '25px' }}>
-                        <label style={{fontWeight:'bold'}}>ชื่อเรื่อง</label>
-                        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} style={{width:'100%', padding:'14px', borderRadius:'8px', border:'1px solid #e0e0e0', backgroundColor:'#fcfcfc' , color:'black'}} required />
-                    </div>
-                    <div style={{ marginBottom: '25px' }}>
-                        <label style={{fontWeight:'bold'}}>หมวดหมู่</label>
-                        <select value={category} onChange={(e) => setCategory(e.target.value)} style={{width:'100%', padding:'14px', borderRadius:'8px', border:'1px solid #e0e0e0' , color:'black'}}>
-                            <option value="Action">แอคชั่น</option>
-                            <option value="Fantasy">แฟนตาซี</option>
-                            <option value="Comedy">ตลก</option>
-                        </select>
-                    </div>
-                    <div style={{ marginBottom: '80px' }}> 
-                        <label style={{fontWeight:'bold', display:'block', marginBottom:'10px'}}>📝 เรื่องย่อ</label>
+                </div>
+                <div style={{...sectionWhite, marginTop: '20px'}}>
+                    <label style={purpleLabel}>เพิ่มเนื้อเรื่องย่อ</label>
+                    <div style={{ marginTop: '10px' }}>
                         <RichTextEditor 
                             value={description} 
                             onChange={setDescription} 
-                            height="200px" 
-                            placeholder="เล่าข้อมูลเบื้องต้น..."
+                            height="250px" 
+                            placeholder="เริ่มเขียนเนื้อเรื่องย่อของคุณ..."
                         />
                     </div>
-                    <button type="submit" disabled={isLoading} style={{ width: '100%', padding: '15px', background: isLoading ? '#ccc' : '#ff7b00', color: 'white', border: 'none', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer' }}>
-                        {isLoading ? (statusMsg || "กำลังสร้างมังงะเรื่องใหม่...") : "สร้างมังงะเลย"}
-                    </button>
-                </form>
-            </div>
+                    {errorMsg && <div style={errorMessage}>❌ {errorMsg}</div>}
+                    <div style={statusRowContainer}>
+                        <div style={statusWhiteCard}>
+                            <div style={{ flex: 1 }}></div> 
+                            <div style={actionButtons}>
+                                <button type="button" style={btnGray} onClick={() => navigate(-1)} disabled={isLoading}>ยกเลิก</button>
+                                <button type="submit" style={btnPurple(isLoading)} disabled={isLoading}>
+                                    {isLoading ? (statusMsg || "กำลังสร้างมังงะใหม่...") : "สร้างมังงะเลย"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     );
 }
+
+const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif", padding: '20px' };
+const headerNav = { maxWidth: '900px', margin: '0 auto 20px auto' };
+const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
+const mainContent = { maxWidth: '900px', margin: '0 auto' };
+const sectionWhite = { backgroundColor: '#fff', padding: '30px', borderRadius: '20px', border: '1px solid #f0f0f0', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' };
+const flexRow = { display: 'flex', gap: '40px' };
+const coverBox: React.CSSProperties = { width: '240px', height: '320px', backgroundColor: '#fdfdfd', borderRadius: '40px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' };
+const plusWrapper = { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '10px' };
+const plusCircle = { width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #bc7df2', display: 'flex', justifyContent: 'center', alignItems: 'center' };
+const uploadHint = { color: '#bc7df2', fontSize: '14px', fontWeight: 'bold' };
+const inputArea = { flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '20px' };
+const fieldGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
+const purpleLabel = { color: '#bc7df2', fontWeight: 'bold', fontSize: '18px' };
+const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px' };
+
+const errorMessage: React.CSSProperties = { color: '#ff4d4f', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' };
+const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '30px' };
+const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '20px', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' };
+const actionButtons = { display: 'flex', gap: '12px', width: '100%', justifyContent: 'flex-end' };
+const btnGray = { padding: '10px 30px', borderRadius: '15px', border: 'none', backgroundColor: '#666', color: '#fff', cursor: 'pointer', fontWeight: 'bold' };
+const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '10px 30px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });
