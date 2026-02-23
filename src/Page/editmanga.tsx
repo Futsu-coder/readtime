@@ -145,13 +145,13 @@ export function EditMangaPage() {
     return (
         <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', fontFamily: "'Sarabun', sans-serif" }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
-                <h2 style={{ margin: 0, color: '#ff7b00' }}>แก้ไขมังงะ: {title}</h2>
+                <h2 style={{ margin: 0, color: '#9b67bd' }}>แก้ไขมังงะ: {title}</h2>
                 <Link to="/dashborad">
                     <button style={{ padding: '8px 15px', border: '1px solid #ddd', background: 'white', borderRadius: '6px', cursor: 'pointer', color:'#000000'}}>กลับหน้าจัดการ</button>
                 </Link>
             </div>
             <div style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px', textAlign: 'center' }}>
-                <h3 style={{ marginTop: 0, color: '#ff7b00', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>หน้าปกมังงะ</h3>
+                <h3 style={{ marginTop: 0, color: '#9b67bd', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>หน้าปกมังงะ</h3>
                 <div 
                     onClick={() => fileInputRef.current?.click()}
                     title="คลิกเพื่อเปลี่ยนรูปหน้าปก"
@@ -216,7 +216,7 @@ export function EditMangaPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '20px' }}>
                     <h3 style={{ margin: 0 }}>สารบัญตอน</h3>
                     <Link to={`/manga/${id}/chapters`}>
-                        <button style={{ padding: '8px 20px', background: '#ff7b00', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}>+ อัปโหลดตอนใหม่</button>
+                        <button style={{ padding: '8px 20px', background: '#9b67bd', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }}>+ อัปโหลดตอนใหม่</button>
                     </Link>
                 </div>
                 {chapters.length === 0 ? (
@@ -225,7 +225,7 @@ export function EditMangaPage() {
                     chapters.map((ch) => (
                         <div key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', borderBottom: '1px solid #eee', alignItems: 'center' }}>
                             <span style={{ fontWeight: 'bold' }}>
-                                <span style={{ color: '#ff7b00', marginRight: '10px' }}>ตอนที่ {ch.chapter_number}</span> 
+                                <span style={{ color: '#9b67bd', marginRight: '10px' }}>ตอนที่ {ch.chapter_number}</span> 
                                 {ch.title}
                             </span>
                             <div style={{ display: 'flex', gap: '10px' }}>
