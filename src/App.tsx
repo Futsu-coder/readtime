@@ -4,6 +4,7 @@ import { HomePage } from "./Page/homepage";
 import { Navbar } from "./components/navbar";
 import { Login } from "./Page/login";
 import { Register } from "./Page/register";
+import { ForgotPassword } from "./Page/forgetpassword";
 import { ProfilePage } from "./Page/profile";
 import { HistoryPage } from "./Page/history";
 
@@ -39,6 +40,8 @@ function App() {
 
           <Route path="/login" element={<Login/>}/>
           <Route path="/register" element={<Register/>}/>
+          <Route path="/forgetpassword" element={<ForgotPassword/>}/>
+          
           <Route path="/createnovel" element={token ? <CreateNovel /> : <Navigate to="/login" />} />
           <Route path="/dashborad" element={token ? <MyDashborad /> : <Navigate to="/login" />} />
           <Route path="/novel/:id/chapters" element={token ? <AddChapterPage />:<Navigate to="login"/>} />

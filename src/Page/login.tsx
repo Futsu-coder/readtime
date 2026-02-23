@@ -170,7 +170,7 @@ export function Login() {
 
             {/* Footer Links */}
             <div style={footerLinksStyle}>
-                <Link to="/forgot-password" style={linkActionStyle}>ลืมรหัสผ่าน?</Link>
+                <Link to="/forgetpassword" style={linkActionStyle}>ลืมรหัสผ่าน?</Link>
                 <Link to="/register" style={linkActionStyle}>สมัครสมาชิก</Link>
             </div>
         </div>
