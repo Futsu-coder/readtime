@@ -43,7 +43,7 @@ export function Login() {
         }
     }
 
-    // --- Styles Based on Image ---
+    // --- Styles ---
     const containerStyle = {
         maxWidth: '450px',
         margin: '80px auto',
@@ -103,7 +103,7 @@ export function Login() {
     const loginButtonStyle = {
         width: '100%',
         padding: '14px',
-        background: '#9163B6', // สีม่วงปุ่ม
+        background: '#9163B6', 
         color: 'white',
         border: 'none',
         borderRadius: '10px',
