@@ -71,7 +71,7 @@ export function EditChapterPage() {
                 <span style={{ color: status.includes('❌') ? 'red' : 'green' }}>{status}</span>
                 <div>
                     <button onClick={() => navigate(`/dashborad`)} style={{ padding: '10px 20px', marginRight: '10px', background: '#ccc', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>ยกเลิก</button>
-                    <button onClick={handleUpdate} style={{ padding: '10px 30px', background: '#eab308', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>💾 อัปเดตเนื้อหา</button>
+                    <button onClick={handleUpdate} style={{ padding: '10px 30px', background: '9b67bd', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}> อัปเดตเนื้อหา</button>
                 </div>
             </div>
         </div>

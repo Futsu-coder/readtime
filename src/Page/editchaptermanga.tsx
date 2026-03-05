@@ -85,12 +85,12 @@ export function EditMangaChapterPage() {
 
     const inputStyle = { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem', outline: 'none' };
 
-    if (isLoading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>⏳ กำลังโหลดข้อมูล...</div>;
+    if (isLoading) return <div style={{ textAlign: 'center', marginTop: '50px' }}> กำลังโหลดข้อมูล...</div>;
 
     return (
         <div style={{ maxWidth: '800px', margin: '40px auto', padding: '0 20px', fontFamily: "'Sarabun', sans-serif" }}>
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                <h1 style={{ color: '#ff7b00', margin: '0 0 10px 0', fontSize: '2.2rem' }}>แก้ไขตอนมังงะ</h1>
+                <h1 style={{ color: '#9b67bd', margin: '0 0 10px 0', fontSize: '2.2rem' }}>แก้ไขตอนมังงะ</h1>
             </div>
             <div style={{ background: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
                 <form onSubmit={handleUpdate}>                    
@@ -140,7 +140,7 @@ export function EditMangaChapterPage() {
                             type="submit" disabled={isSaving}
                             style={{
                                 padding: '12px 30px',
-                                background: isSaving ? '#ccc' : '#ff7b00',
+                                background: isSaving ? '#ccc' : '#9b67bd',
                                 color: 'white', border: 'none', borderRadius: '30px', fontSize: '1.1rem', fontWeight: 'bold',
                                 cursor: isSaving ? 'not-allowed' : 'pointer', transition: '0.2s',
                                 boxShadow: isSaving ? 'none' : '0 4px 15px rgba(255, 123, 0, 0.4)'

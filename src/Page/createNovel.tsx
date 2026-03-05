@@ -40,7 +40,7 @@ export function CreateNovel() {
                 const data = await res.json() as any;
                 const newNovelId = data.novel?.id || data.id;
                 if (coverFile && newNovelId) {
-                    setStatusMsg("⏳ กำลังอัปโหลดหน้าปก...");
+                    setStatusMsg(" กำลังอัปโหลดหน้าปก...");
                     const formData = new FormData();
                     formData.append("cover", coverFile);
                     await fetch(`${API_URL}/api/protected/novels/${newNovelId}/cover`, {

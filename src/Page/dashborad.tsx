@@ -116,7 +116,7 @@ export function MyDashborad() {
                                 <div style={{ position: 'absolute', top: '110%', left: 0, width: '180px', backgroundColor: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderRadius: '12px', zIndex: 20, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
                                     <div onClick={() => { setActiveFilter('all'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'all' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'all' ? 'bold' : 'normal' }}>ทั้งหมด</div>
                                     <div onClick={() => { setActiveFilter('novel'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'novel' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'novel' ? 'bold' : 'normal' }}>นิยาย</div>
-                                    <div onClick={() => { setActiveFilter('manga'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'manga' ? '#9b67bd' : '#555', cursor: 'pointer', fontWeight: activeFilter === 'manga' ? 'bold' : 'normal' }}>การ์ตูน</div>
+                                    <div onClick={() => { setActiveFilter('manga'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'manga' ? '#9b67bd' : '#555', cursor: 'pointer', fontWeight: activeFilter === 'manga' ? 'bold' : 'normal' }}>มังงะ</div>
                                 </div>
                             )}
                         </div>
@@ -141,8 +141,8 @@ export function MyDashborad() {
                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <span style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>{work.title}</span>
                                     <span style={{ fontSize: '13px', color: '#888' }}>
-                                        <span style={{ color: work.type === 'novel' ? '#9b67bd' : '#ff7b00', fontWeight: 'bold', marginRight: '10px' }}>
-                                            {work.type === 'novel' ? '📖 นิยาย' : '🎨 มังงะ'}
+                                        <span style={{ color: work.type === 'novel' ? '#9b67bd' : '#9b67bd', fontWeight: 'bold', marginRight: '10px' }}>
+                                            {work.type === 'novel' ? ' นิยาย' : ' มังงะ'}
                                         </span>
                                         สร้างเมื่อ {new Date(work.created_at).toLocaleDateString('th-TH')}
                                     </span>

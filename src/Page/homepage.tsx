@@ -129,7 +129,7 @@ export function HomePage() {
 
 const containerStyle: React.CSSProperties = { backgroundColor: '#fff', minHeight: '100vh', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
 
-const wideContent: React.CSSProperties = { maxWidth: '100%', margin: '0 auto 40px', padding: '0 50px 10px' }; 
+const wideContent: React.CSSProperties = { maxWidth: '1440px', margin: '0 auto ', padding: '0 50px 10px' }; 
 
 const bannerGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px', paddingTop: '20px' };
 const bannerCard: React.CSSProperties = { height: '200px', borderRadius: '16px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '22px' };
