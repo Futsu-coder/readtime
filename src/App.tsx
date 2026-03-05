@@ -26,6 +26,8 @@ import { ReadMangaPage } from "./Page/readmanga";
 import { EditMangaPage } from "./Page/editmanga";
 import { EditMangaChapterPage } from "./Page/editchaptermanga";
 
+import { Admindashboard } from "./Page/admindashboard";
+
 
 
 function App() {
@@ -57,7 +59,10 @@ function App() {
           <Route path="/manga/:id/chapters/:chapterId" element={<ReadMangaPage />} />
           <Route path="/manga/:id/edit" element={token ? <EditMangaPage /> : <Navigate to="/login"/>} />
           <Route path="/manga/:id/chapter/:chapterId/edit" element={token ? <EditMangaChapterPage/> : <Navigate to="/login"/>}/>
+
           <Route path="/history" element={token ?<HistoryPage />  : <Navigate to="/login"/>} />
+
+          <Route path="/admin" element={token ? <Admindashboard/> : <Navigate to="/login"/>}/>
         </Routes>
       </div>
     </BrowserRouter>
