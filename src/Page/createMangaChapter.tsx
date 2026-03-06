@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, ChevronLeft, GripVertical, Trash2 } from 'lucide-react'; // 🌟 เพิ่ม GripVertical กับ Trash2
 import { API_URL } from "../client";
 
+
 interface PageImage {
     file: File;
     preview: string;
@@ -296,7 +297,7 @@ export function CreateMangaChapterPage() {
                     <div style={{ ...modalContainer, borderColor: '#4caf50' }}>
                         <h2 style={modalTitle}>✅ อัปโหลดสำเร็จ</h2>
                         <div style={modalActionArea}>
-                            <button style={{ ...btnPublishNow, background: '#4caf50' }} onClick={() => navigate(`/mangas/${id}`)}>ดูหน้ารายละเอียดมังงะ</button>
+                            <button style={{ ...btnPublishNow, background: '#4caf50' }} onClick={() => navigate(`/manga/${id}`)}>ดูหน้ารายละเอียดมังงะ</button>
                             <button style={btnKeepDraft} onClick={() => {
                                 setShowSuccessOption(false);
                                 setChapterNumber(""); setTitle(""); setPages([]);

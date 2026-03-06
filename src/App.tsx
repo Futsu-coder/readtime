@@ -26,7 +26,7 @@ import { ReadMangaPage } from "./Page/readmanga";
 import { EditMangaPage } from "./Page/editmanga";
 import { EditMangaChapterPage } from "./Page/editchaptermanga";
 
-import { Admindashboard } from "./Page/admindashboard";
+import { AdminDashboard } from "./Page/admindashboard";
 
 
 
@@ -62,7 +62,7 @@ function App() {
 
           <Route path="/history" element={token ?<HistoryPage />  : <Navigate to="/login"/>} />
 
-          <Route path="/admin" element={token ? <Admindashboard/> : <Navigate to="/login"/>}/>
+          <Route path="/admin" element={token ? <AdminDashboard/> : <Navigate to="/login"/>}/>
         </Routes>
       </div>
     </BrowserRouter>

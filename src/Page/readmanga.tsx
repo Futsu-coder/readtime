@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../client";
 import { CommentSection } from "../components/comment";
+import { Flag } from 'lucide-react';
+import { ReportModal } from '../components/ReportModal';
 
 interface MangaChapter {
     id: number;
@@ -24,6 +26,7 @@ export function ReadMangaPage() {
     const [allChapters, setAllChapters] = useState<MangaChapter[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [showReport, setShowReport] = useState(false);
 
     useEffect(() => {
         const fetchAllChapters = async () => {
@@ -119,6 +122,9 @@ export function ReadMangaPage() {
                     </h3>
                     <span style={{ fontSize: '0.9rem', color: '#bbb' }}>{chapter.title}</span>
                 </div>
+                <button onClick={() => setShowReport(true)} style={{ background: '#fff1f0', border: '1px solid #ffa39e', color: '#e11d48', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }} >
+                    <Flag size={14} /> รายงานตอนนี้
+                </button>
                 <div style={{ width: '100px' }}></div> 
             </div>
             <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
@@ -150,7 +156,7 @@ export function ReadMangaPage() {
             }}>
                 <button 
                     disabled={!prevChapter}
-                    onClick={() => prevChapter && navigate(`/manga/${id}/read/${prevChapter.id}`)}
+                    onClick={() => prevChapter && navigate(`/manga/${id}/chapters/${prevChapter.id}`)}
                     style={{ 
                         visibility: prevChapter ? 'visible' : 'hidden', 
                         padding: '12px 25px', cursor: 'pointer', background: '#333', 
@@ -162,7 +168,7 @@ export function ReadMangaPage() {
 
                 <button 
                     disabled={!nextChapter}
-                    onClick={() => nextChapter && navigate(`/manga/${id}/read/${nextChapter.id}`)}
+                    onClick={() => nextChapter && navigate(`/manga/${id}/chapters/${nextChapter.id}`)}
                     style={{ 
                         visibility: nextChapter ? 'visible' : 'hidden', 
                         padding: '12px 25px', cursor: 'pointer', background: '#ff7b00', 
@@ -176,6 +182,12 @@ export function ReadMangaPage() {
             {id && chapterId && (
                 <CommentSection workType="manga" workId={id!} chapterId={chapterId!} />
             )}
+            <ReportModal 
+                isOpen={showReport} 
+                onClose={() => setShowReport(false)} 
+                workId={Number(id)} 
+                workType="manga" 
+                chapterTitle={chapter.title ? `ตอนที่ ${chapter.chapter_number} - ${chapter.title}` : `ตอนที่ ${chapter.chapter_number}`}/>
         </div>
     );
 }

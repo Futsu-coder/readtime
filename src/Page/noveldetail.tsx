@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Play, BookOpen, Heart } from 'lucide-react';
 import { client } from "../client";
 import { NovelImage } from "../components/novelimage";
+import { Flag } from 'lucide-react';
+import { ReportModal } from '../components/ReportModal';
 
 interface Novel {
     id: number;
@@ -39,6 +41,7 @@ export function Noveldetailpage() {
     const [isHover, setIsHover] = useState(false); // สำหรับ Hover ชื่อผู้แต่ง
 
     const isLoggedIn = !!localStorage.getItem('token');
+    const [showReport, setShowReport] = useState(false);
 
     // 🌟 1. ดึง ID ผู้ใช้จาก Token เพื่อเช็คสิทธิ์
     useEffect(() => {
@@ -153,6 +156,9 @@ export function Noveldetailpage() {
                             <BookOpen size={18} color="#aaa" /> 
                             {novel.view_count.toLocaleString()} ครั้ง
                         </span>
+                        <span onClick={() => setShowReport(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#e11d48', transition: '0.2s' }} >
+                            <Flag size={18} /> รายงานปัญหา
+                        </span>
                     </div>
                 </div>
             </div>
@@ -194,7 +200,15 @@ export function Noveldetailpage() {
                     </div>
                 )}
             </div>
+            <ReportModal 
+                isOpen={showReport} 
+                onClose={() => setShowReport(false)} 
+                workId={Number(id)} 
+                workType="novel" 
+                chapterTitle={null}
+            />
         </div>
+        
     );
 }
 

@@ -161,7 +161,7 @@ export function AddChapterPage() {
                     <div style={modalContainer}>
                         <h2 style={modalTitle}>บันทึกสำเร็จ</h2>
                         <div style={modalActionArea}>
-                            <button style={btnPublishNow} onClick={() => navigate(`/novels/${id}`)}>ดูรายละเอียดนิยาย</button>
+                            <button style={btnPublishNow} onClick={() => navigate(`/novel/${id}`)}>ดูรายละเอียดนิยาย</button>
                             <button style={btnKeepDraft} onClick={() => {
                                 setShowSuccessOption(false);
                                 setTitle(""); 

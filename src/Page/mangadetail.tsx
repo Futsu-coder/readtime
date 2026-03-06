@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Play, BookOpen, Heart } from 'lucide-react';
 import { API_URL } from "../client"; 
 import { NovelImage } from "../components/novelimage";
+import { Flag } from 'lucide-react';
+import { ReportModal } from '../components/ReportModal';
 
 interface Manga {
     id: number;
@@ -39,6 +41,7 @@ export function MangaDetailPage() {
         } catch { return null; }
     });
     const isLoggedIn = !!localStorage.getItem('token');
+    const [showReport, setShowReport] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -135,6 +138,10 @@ export function MangaDetailPage() {
                             <BookOpen size={18} color="#aaa" /> 
                             {manga.view_count.toLocaleString()} ครั้ง
                         </span>
+
+                        <button onClick={() => setShowReport(true)} style={{ background: '#fff1f0', border: '1px solid #ffa39e', color: '#e11d48', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }} >
+                            <Flag size={14} /> รายงานตอนนี้
+                        </button>
                     </div>
                 </div>
             </div>
@@ -175,6 +182,13 @@ export function MangaDetailPage() {
                     </div>
                 )}
             </div>
+            <ReportModal 
+                isOpen={showReport} 
+                onClose={() => setShowReport(false)} 
+                workId={Number(id)} 
+                workType="manga" 
+                chapterTitle={null} // 🌟 หน้าอ่านตอน โยนชื่อตอนเข้าไปด้วยเลย!
+            />
         </div>
     );
 }
