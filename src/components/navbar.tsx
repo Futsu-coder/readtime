@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Pencil, User, BookOpen, Settings, LogOut, Bookmark } from 'lucide-react';
+// 🌟 1. นำเข้าไอคอน Shield มาใช้สำหรับปุ่มแอดมิน
+import { Search, Bell, Pencil, User, BookOpen, Settings, LogOut, Bookmark, Shield } from 'lucide-react';
 import { client, API_URL } from "../client"; 
 
 interface SearchResult {
@@ -13,6 +14,9 @@ interface SearchResult {
 export function Navbar() {
     const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+    // 🌟 2. เพิ่ม State สำหรับเก็บสถานะว่าเป็น Admin ไหม
+    const [isAdmin, setIsAdmin] = useState(false); 
+
     const [showProfile, setShowProfile] = useState(false);
     const [showNoti, setShowNoti] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -22,6 +26,24 @@ export function Navbar() {
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchDropdown, setShowSearchDropdown] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
+
+    // 🌟 3. เพิ่ม useEffect เพื่อแกะ Token ดูสิทธิ์ (Role) ตอนเปิดเว็บ
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                // แกะข้อมูลที่ซ่อนอยู่ใน Token (Payload)
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                console.log("แกะกล่อง Token ดูหน่อย:", payload);
+                // ถ้า Role เป็น admin หรือ super_admin ให้เปิดโหมดแอดมิน!
+                if (payload.role === 'admin' || payload.role === 'super_admin') {
+                    setIsAdmin(true);
+                }
+            } catch (e) {
+                console.error("Token parse error", e);
+            }
+        }
+    }, [isLoggedIn]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
@@ -88,6 +110,7 @@ export function Navbar() {
     const handleLogout = () => {
         localStorage.removeItem('token');
         setIsLoggedIn(false);
+        setIsAdmin(false); // เคลียร์สิทธิ์แอดมินตอนล็อกเอาต์ด้วย
         setShowProfile(false);
         window.location.reload();
         navigate('/');
@@ -156,6 +179,13 @@ export function Navbar() {
                 <div style={navRightSide}>
                     {isLoggedIn ? (
                         <>
+                            {/* 🌟 4. ปุ่มเข้าห้องลับแอดมิน (โชว์เฉพาะคนที่มีสิทธิ์) */}
+                            {isAdmin && (
+                                <div style={iconBadge} onClick={() => handleNavigate('/admin')} title="Admin Dashboard">
+                                    <Shield size={22} strokeWidth={1.5} color="#e11d48" />
+                                </div>
+                            )}
+
                             <div style={{ position: 'relative' }} ref={notiRef}>
                                 <div style={iconBadge} onClick={() => { setShowNoti(!showNoti); setShowProfile(false); }}>
                                     <Bell size={22} strokeWidth={1.5} color="#333" />
@@ -221,6 +251,7 @@ export function Navbar() {
     );
 }
 
+// ... (Styles ด้านล่างคงเดิมทั้งหมดครับ ไม่ได้แก้เลย) ...
 const navbarStyle: React.CSSProperties = { padding: '12px 0', borderBottom: '1px solid #f3f3f3', backgroundColor: '#fff', position: 'sticky', top: 0, zIndex: 1000, fontFamily: "'Kanit', sans-serif" };
 const navInner: React.CSSProperties = { maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 50px' };
 const navLeftSide: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '40px', flexShrink: 0 };
