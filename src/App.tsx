@@ -27,7 +27,6 @@ import { EditMangaPage } from "./Page/editmanga";
 import { EditMangaChapterPage } from "./Page/editchaptermanga";
 
 
-
 function App() {
   const token = localStorage.getItem('token')
   return(

@@ -1,12 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { client } from "../client";
-import { NovelCard } from "../components/novelcard"; // 🌟 เรียกใช้ Card ที่เราแยกไว้
+import { NovelCard } from "../components/novelcard";
 
 export function HomePage() {
-    const [works, setWorks] = useState<Novel[]>([]);
+    const [works, setWorks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState<'all' | 'novel' | 'manga'>('all');
     const [activeGenre, setActiveGenre] = useState<string>('All');
+
+    const genreColors: { [key: string]: string } = {
+        'Action': '#B5C4FF',     
+        'Romance': '#F7A8E0',     
+        'Fantasy': '#D4B5FF',     
+        'Horror': '#F99F95',      
+        'Comedy': '#E4EF8B',      
+        'Adventure': '#8CC1F7',  
+        'Drama': '#F7E18C',       
+        'General': '#B2F2D0',     
+        'Slice of Life': '#F4B183',
+        'Isekai': '#D291E4'      
+        
+    };
+
     const genres = [
         'All', 'Action', 'Romance', 'Fantasy', 'Horror', 'Comedy', 
         'Adventure', 'Drama', 'General', 'Slice of Life', 'Isekai'
@@ -19,7 +34,7 @@ export function HomePage() {
                     client.api.public.novels.$get(),
                     client.api.public.mangas.$get()
                 ]);
-                let combined: Novel[] = [];
+                let combined: any[] = [];
                 if (novelsRes.ok) {
                     const data = await novelsRes.json() as any;
                     combined = [...combined, ...(data.novels || []).map((n: any) => ({ ...n, type: 'novel' }))];
@@ -52,6 +67,26 @@ export function HomePage() {
             setActiveCategory(type);
         }
         setActiveGenre('All');
+    };
+
+    const getGenreTagStyle = (genre: string, isActive: boolean) => {
+        const baseStyle = isActive ? activeGenreTag : genreTag;
+        
+        // ดึงสีตามหมวดหมู่ ถ้าไม่มีให้ใช้สีเทาอ่อนตามค่าเริ่มต้น
+        const genreColor = genreColors[genre] || '#efefef';
+        
+        let backgroundColor = genreColor;
+        if (genre === 'All' && isActive) {
+            backgroundColor = '#9b67bd'; 
+        }
+
+        const color = (genre === 'All' && isActive) ? 'white' : '#222';
+
+        return {
+            ...baseStyle,
+            backgroundColor: backgroundColor,
+            color: color
+        };
     };
 
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>กำลังโหลดข้อมูลหนังสือ...</div>;
@@ -90,7 +125,7 @@ export function HomePage() {
                         {genres.map((genre) => (
                             <span 
                                 key={genre} 
-                                style={activeGenre === genre ? activeGenreTag : genreTag}
+                                style={getGenreTagStyle(genre, activeGenre === genre)}
                                 onClick={() => setActiveGenre(genre)}
                             >
                                 {genre}
@@ -141,11 +176,11 @@ const inactiveTab: React.CSSProperties = { color: '#aaa', paddingBottom: '12px',
 const genreSectionTop: React.CSSProperties = { marginBottom: '40px' };
 const genreList: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '20px' };
 const genreTag: React.CSSProperties = { 
-    padding: '8px 20px', backgroundColor: '#efefef', borderRadius: '25px', 
-    fontSize: '14px', color: '#555', cursor: 'pointer', fontWeight: '500', transition: '0.2s', userSelect: 'none'
+    padding: '8px 20px', borderRadius: '25px', //backgroundColor: '#efefef', 
+    fontSize: '14px', /* color: '#555', */ cursor: 'pointer', fontWeight: '500', transition: '0.2s', userSelect: 'none'
 };
 const activeGenreTag: React.CSSProperties = { 
-    ...genreTag, backgroundColor: '#9b67bd', color: 'white' 
+    ...genreTag, 
 };
 
 const sectionMargin: React.CSSProperties = { marginBottom: '50px' };

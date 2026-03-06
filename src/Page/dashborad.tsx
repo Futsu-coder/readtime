@@ -89,7 +89,7 @@ export function MyDashborad() {
         return 'ทั้งหมด';
     };
 
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#9b67bd', fontSize: '1.2rem' }}>⏳ กำลังโหลดข้อมูลงานเขียน...</div>;
+    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#9b67bd', fontSize: '1.2rem' }}>กำลังโหลดข้อมูลงานเขียน...</div>;
 
     return (
         <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 30px', fontFamily: "'Kanit', 'Sarabun', sans-serif" }}>
