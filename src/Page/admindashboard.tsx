@@ -51,6 +51,9 @@ export function AdminDashboard() {
     // 🌟 State ควบคุม Sidebar
     const [activeTab, setActiveTab] = useState('reports');
 
+    // 🌟 State เก็บสิทธิ์ของผู้ใช้งาน (Role)
+    const [adminRole, setAdminRole] = useState<string>('');
+
     // 🌟 State ข้อมูล
     const [reports, setReports] = useState<Report[]>([]);
     const [historyReports, setHistoryReports] = useState<Report[]>([]);
@@ -65,17 +68,15 @@ export function AdminDashboard() {
     const [banDays, setBanDays] = useState('7');
     const [banReason, setBanReason] = useState('');
 
-    // 🌟 State สำหรับหน้าแบนผู้ใช้ (Banned Users)
+    // 🌟 State สำหรับหน้าแบนผู้ใช้
     const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
     const [loadingBanned, setLoadingBanned] = useState(false);
-    
-    // 🌟 State สำหรับ Pop-up สั่งแบน Manual
     const [manualBanModalOpen, setManualBanModalOpen] = useState(false);
     const [manualBanUsername, setManualBanUsername] = useState(''); 
     const [manualBanDays, setManualBanDays] = useState('7');
     const [manualBanReason, setManualBanReason] = useState('');
 
-    // 🌟 State สำหรับหน้าแบนงานเขียน (Banned Works)
+    // 🌟 State สำหรับหน้าแบนงานเขียน
     const [bannedWorks, setBannedWorks] = useState<BannedWork[]>([]);
     const [loadingBannedWorks, setLoadingBannedWorks] = useState(false);
 
@@ -86,6 +87,30 @@ export function AdminDashboard() {
         return () => document.removeEventListener("click", closeMenu);
     }, []);
 
+// 🌟 ตรวจสอบสิทธิ์ (Role) ของแอดมินที่ล็อกอินอยู่
+    useEffect(() => {
+        const fetchRole = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                // 🌟 วิ่งไปถาม API ตัวใหม่ที่เราเพิ่งสร้างเมื่อกี้!
+                const res = await fetch(`${API_URL}/api/admin/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    setAdminRole(data.role); // จะได้ค่า 'super_admin' มาใส่ตรงนี้
+                    console.log("🔥 ตำแหน่งของคุณคือ:", data.role); // แอบปริ้นท์ดูใน Console (F12) ได้ครับ
+                }
+            } catch (err) { 
+                console.error("Error fetching user role", err); 
+            }
+        };
+        fetchRole();
+    }, []);
+    
     // ดึงข้อมูลรายงานรอดำเนินการ
     const fetchReports = async () => {
         setLoading(true);
@@ -156,7 +181,6 @@ export function AdminDashboard() {
         } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
     };
 
-    // 🌟 1. ฟังก์ชันล้างประวัติทั้งหมด
     const handleClearHistory = async () => {
         if (!window.confirm("🚨 คำเตือน: แน่ใจหรือไม่ว่าต้องการ 'ล้างประวัติทั้งหมด' ทิ้งถาวร?\n(การกระทำนี้ไม่สามารถกู้คืนได้)")) return;
         try {
@@ -168,7 +192,7 @@ export function AdminDashboard() {
             
             if (res.ok) { 
                 alert("🧹 ล้างประวัติรายงานทั้งหมดเรียบร้อยแล้ว"); 
-                setHistoryReports([]); // ล้างข้อมูลในจอทันที
+                setHistoryReports([]); 
             } else {
                 alert("เกิดข้อผิดพลาดในการลบข้อมูล");
             }
@@ -350,10 +374,14 @@ export function AdminDashboard() {
                 <SidebarItem id="banned_works" icon={BookX} label="แบนงานเขียน" />
                 <SidebarItem id="history" icon={History} label="ประวัติรายงาน" />
 
-                <div style={{ ...menuGroupTitle, marginTop: '20px' }}>แก้ไข/เพิ่ม หมวดหมู่</div>
-                <SidebarItem id="categories" icon={ListTree} label="จัดการหมวดหมู่" />
-                <div style={{ ...menuGroupTitle, marginTop: '20px' }}>จัดการสิทธิ์</div>
-                <SidebarItem id="admins" icon={UserCog} label="จัดการสิทธิ์(Admin)" />
+                {/* 🌟 ซ่อนเมนูตั้งค่าระบบ ถ้าไม่ใช่ Super Admin */}
+                {adminRole === 'super_admin' && (
+                    <>
+                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>ตั้งค่าระดับสูง</div>
+                        <SidebarItem id="categories" icon={ListTree} label="จัดการหมวดหมู่" />
+                        <SidebarItem id="admins" icon={UserCog} label="จัดการสิทธิ์(Admin)" />
+                    </>
+                )}
 
                 <div style={{ flex: 1 }}></div>
                 <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
@@ -387,6 +415,7 @@ export function AdminDashboard() {
                                                                 <button style={btnMoreInfo} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === report.id ? null : report.id); }}><MoreVertical size={20} /></button>
                                                                 {openDropdownId === report.id && (
                                                                     <div style={dropdownMenu}>
+                                                                        <div style={dropdownItemGray} onClick={(e) => { e.stopPropagation(); handleDeleteReport(report.id); }} onMouseOver={e => e.currentTarget.style.backgroundColor = '#f5f5f5'} onMouseOut={e => e.currentTarget.style.backgroundColor = '#fff'}><Trash2 size={16} /> ลบเนื้อรายงาน</div>
                                                                         <div style={dropdownItemRed} onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setActionModalOpen(true); setOpenDropdownId(null); }} onMouseOver={e => e.currentTarget.style.backgroundColor = '#fff1f0'} onMouseOut={e => e.currentTarget.style.backgroundColor = '#fff'}><Ban size={16} /> ระงับผู้ใช้ / ลบเนื้อหา</div>
                                                                     </div>
                                                                 )}
@@ -411,8 +440,6 @@ export function AdminDashboard() {
                                 <h1 style={pageTitle}>ประวัติรายงาน</h1>
                                 <p style={pageSubtitle}>แฟ้มคดีทั้งหมดที่แอดมินทำการตัดสินไปแล้ว</p>
                             </div>
-                            
-                            {/* 🌟 2. ปุ่มล้างประวัติทั้งหมด */}
                             {historyReports.length > 0 && (
                                 <button 
                                     onClick={handleClearHistory}
@@ -545,10 +572,21 @@ export function AdminDashboard() {
                     </div>
                 )}
 
-                {/* 🔴 TAB อื่นๆ */}
+                {/* 🔴 TAB อื่นๆ (เฉพาะ Super Admin เท่านั้น หรือซ่อนไปเลย) */}
                 {activeTab !== 'reports' && activeTab !== 'history' && activeTab !== 'banned_users' && activeTab !== 'banned_works' && (
                     <div style={{ textAlign: 'center', padding: '100px 20px', color: '#888' }}>
-                        <div style={{ fontSize: '60px', marginBottom: '20px' }}>🚧</div><h2 style={{ color: '#555' }}>กำลังพัฒนาระบบส่วนนี้...</h2>
+                        {adminRole !== 'super_admin' && (activeTab === 'categories' || activeTab === 'admins') ? (
+                            <>
+                                <div style={{ fontSize: '60px', marginBottom: '20px' }}>⛔</div>
+                                <h2 style={{ color: '#e11d48' }}>ไม่มีสิทธิ์เข้าถึงส่วนนี้</h2>
+                                <p>เฉพาะ Super Admin เท่านั้นที่สามารถจัดการระบบนี้ได้</p>
+                            </>
+                        ) : (
+                            <>
+                                <div style={{ fontSize: '60px', marginBottom: '20px' }}>🚧</div>
+                                <h2 style={{ color: '#555' }}>กำลังพัฒนาระบบส่วนนี้...</h2>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
