@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { client } from "../client";
-import { NovelCard } from "../components/novelcard"; // 🌟 เรียกใช้ Card ที่เราแยกไว้
+import { API_URL } from "../client"; // 🌟 ไม่ใช้ client แล้ว ใช้แค่ API_URL
+import { NovelCard } from "../components/novelcard"; 
 
 export function HomePage() {
-    const [works, setWorks] = useState<Novel[]>([]);
+    const [works, setWorks] = useState<any[]>([]); 
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState<'all' | 'novel' | 'manga'>('all');
     const [activeGenre, setActiveGenre] = useState<string>('All');
-    const genres = [
-        'All', 'Action', 'Romance', 'Fantasy', 'Horror', 'Comedy', 
-        'Adventure', 'Drama', 'General', 'Slice of Life', 'Isekai'
-    ];
+    
+    // 🌟 1. เปลี่ยน genres เป็น State เพื่อรอรับค่าจาก Database (มี 'All' เป็นค่าเริ่มต้น)
+    const [genres, setGenres] = useState<string[]>(['All']);
 
     useEffect(() => {
         const fetchAllWorks = async () => {
             try {
-                const [novelsRes, mangasRes] = await Promise.all([
-                    client.api.public.novels.$get(),
-                    client.api.public.mangas.$get()
+                // 🌟 2. ดึงข้อมูลทั้งหมดด้วย fetch ธรรมดา เพื่อความชัวร์
+                const [novelsRes, mangasRes, categoriesRes] = await Promise.all([
+                    fetch(`${API_URL}/api/public/novels`),
+                    fetch(`${API_URL}/api/public/mangas`),
+                    fetch(`${API_URL}/api/public/categories`) 
                 ]);
-                let combined: Novel[] = [];
+                
+                let combined: any[] = [];
                 if (novelsRes.ok) {
                     const data = await novelsRes.json() as any;
                     combined = [...combined, ...(data.novels || []).map((n: any) => ({ ...n, type: 'novel' }))];
@@ -30,6 +32,14 @@ export function HomePage() {
                 }
                 combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
                 setWorks(combined);
+
+                // 🌟 3. นำข้อมูลหมวดหมู่ที่ดึงได้ มาใส่ใน State
+                if (categoriesRes.ok) {
+                    const catData = await categoriesRes.json();
+                    if (catData.categories && catData.categories.length > 0) {
+                        setGenres(['All', ...catData.categories]);
+                    }
+                }
             } catch (err) {
                 console.error("Failed to load content:", err);
             } finally {
@@ -127,36 +137,22 @@ export function HomePage() {
     );
 }
 
+// ... styles เดิมของบอสทั้งหมด ...
 const containerStyle: React.CSSProperties = { backgroundColor: '#fff', minHeight: '100vh', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
-
 const wideContent: React.CSSProperties = { maxWidth: '1440px', margin: '0 auto ', padding: '0 50px 10px' }; 
-
 const bannerGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px', paddingTop: '20px' };
 const bannerCard: React.CSSProperties = { height: '200px', borderRadius: '16px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '22px' };
-
 const tabBar: React.CSSProperties = { display: 'flex', gap: '40px', marginBottom: '25px', borderBottom: '1px solid #eee', userSelect: 'none' }; 
 const activeTab: React.CSSProperties = { color: '#9b67bd', borderBottom: '3px solid #9b67bd', paddingBottom: '12px', fontWeight: '600', fontSize: '18px', cursor: 'pointer' };
 const inactiveTab: React.CSSProperties = { color: '#aaa', paddingBottom: '12px', fontSize: '18px', cursor: 'pointer', transition: '0.2s' };
-
 const genreSectionTop: React.CSSProperties = { marginBottom: '40px' };
 const genreList: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '20px' };
-const genreTag: React.CSSProperties = { 
-    padding: '8px 20px', backgroundColor: '#efefef', borderRadius: '25px', 
-    fontSize: '14px', color: '#555', cursor: 'pointer', fontWeight: '500', transition: '0.2s', userSelect: 'none'
-};
-const activeGenreTag: React.CSSProperties = { 
-    ...genreTag, backgroundColor: '#9b67bd', color: 'white' 
-};
-
+const genreTag: React.CSSProperties = { padding: '8px 20px', backgroundColor: '#efefef', borderRadius: '25px', fontSize: '14px', color: '#555', cursor: 'pointer', fontWeight: '500', transition: '0.2s', userSelect: 'none' };
+const activeGenreTag: React.CSSProperties = { ...genreTag, backgroundColor: '#9b67bd', color: 'white' };
 const sectionMargin: React.CSSProperties = { marginBottom: '50px' };
 const sectionHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' };
 const titleGroup: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '12px' };
 const purpleLine: React.CSSProperties = { width: '5px', height: '24px', backgroundColor: '#9b67bd', borderRadius: '4px' };
 const sectionTitle: React.CSSProperties = { fontSize: '22px', margin: 0, fontWeight: 'bold', color: '#222' };
 const viewMore: React.CSSProperties = { color: '#9b67bd', fontSize: '14px', cursor: 'pointer' };
-
-const bookGrid: React.CSSProperties = { 
-    display: 'grid', 
-    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-    gap: '25px' 
-};
+const bookGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '25px' };

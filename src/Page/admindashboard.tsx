@@ -45,6 +45,19 @@ interface BannedWork {
     owner_name: string;
 }
 
+// 🌟 เพิ่ม Interface สำหรับ Category และ UserList
+interface Category {
+    id: number;
+    name: string;
+}
+
+interface UserListItem {
+    id: number;
+    username: string;
+    author: string;
+    role: string;
+}
+
 export function AdminDashboard() {
     const navigate = useNavigate();
     
@@ -80,6 +93,25 @@ export function AdminDashboard() {
     const [bannedWorks, setBannedWorks] = useState<BannedWork[]>([]);
     const [loadingBannedWorks, setLoadingBannedWorks] = useState(false);
 
+    // 🌟 State จัดการหมวดหมู่
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [newCategory, setNewCategory] = useState('');
+    const [editingCategory, setEditingCategory] = useState<number | null>(null);
+    const [editCategoryName, setEditCategoryName] = useState('');
+
+    // 🌟 State จัดการสิทธิ์ Admin
+    const [usersList, setUsersList] = useState<UserListItem[]>([]);
+
+    // 🌟 State จัดการสิทธิ์ Admin
+    const [searchUser, setSearchUser] = useState(''); // 🌟 1. เพิ่ม State เก็บคำค้นหา
+
+    // 🌟 2. สร้างตัวกรองข้อมูล (ให้หาจาก ID, ชื่อผู้ใช้ หรือ นามปากกาก็ได้)
+    const filteredUsers = usersList.filter(u => 
+        u.username.toLowerCase().includes(searchUser.toLowerCase()) || 
+        (u.author && u.author.toLowerCase().includes(searchUser.toLowerCase())) ||
+        u.id.toString().includes(searchUser)
+    );
+
     // --- Effects ---
     useEffect(() => {
         const closeMenu = () => setOpenDropdownId(null);
@@ -87,22 +119,20 @@ export function AdminDashboard() {
         return () => document.removeEventListener("click", closeMenu);
     }, []);
 
-// 🌟 ตรวจสอบสิทธิ์ (Role) ของแอดมินที่ล็อกอินอยู่
+    // 🌟 ตรวจสอบสิทธิ์ (Role) ของแอดมินที่ล็อกอินอยู่
     useEffect(() => {
         const fetchRole = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) return;
 
-                // 🌟 วิ่งไปถาม API ตัวใหม่ที่เราเพิ่งสร้างเมื่อกี้!
                 const res = await fetch(`${API_URL}/api/admin/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
                 if (res.ok) {
                     const data = await res.json();
-                    setAdminRole(data.role); // จะได้ค่า 'super_admin' มาใส่ตรงนี้
-                    console.log("🔥 ตำแหน่งของคุณคือ:", data.role); // แอบปริ้นท์ดูใน Console (F12) ได้ครับ
+                    setAdminRole(data.role); 
                 }
             } catch (err) { 
                 console.error("Error fetching user role", err); 
@@ -154,11 +184,33 @@ export function AdminDashboard() {
         } catch (err) { console.error(err); } finally { setLoadingBannedWorks(false); }
     };
 
+    // 🌟 ดึงข้อมูลหมวดหมู่
+    const fetchCategories = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/categories`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) { const data = await res.json(); setCategories(data.categories || []); }
+        } catch (err) { console.error(err); } finally { setLoading(false); }
+    };
+
+    // 🌟 ดึงรายชื่อผู้ใช้ทั้งหมด
+    const fetchUsersList = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) { const data = await res.json(); setUsersList(data.users || []); }
+        } catch (err) { console.error(err); } finally { setLoading(false); }
+    };
+
     useEffect(() => {
         if (activeTab === 'reports') fetchReports();
         else if (activeTab === 'history') fetchHistory();
         else if (activeTab === 'banned_users') fetchBannedUsers();
         else if (activeTab === 'banned_works') fetchBannedWorks();
+        else if (activeTab === 'categories') fetchCategories();
+        else if (activeTab === 'admins') fetchUsersList();
     }, [navigate, activeTab]);
 
     // --- Handlers: จัดการ Reports ---
@@ -308,6 +360,57 @@ export function AdminDashboard() {
         } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
     };
 
+    // 🌟 --- Handlers: จัดการหมวดหมู่ ---
+    const handleAddCategory = async () => {
+        if (!newCategory.trim()) return alert('กรุณากรอกชื่อหมวดหมู่');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/categories`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ name: newCategory.trim() })
+            });
+            if (res.ok) { setNewCategory(''); fetchCategories(); } 
+            else { const data = await res.json(); alert(data.error); }
+        } catch (err) { alert('เกิดข้อผิดพลาด'); }
+    };
+
+    const saveEditCategory = async (id: number) => {
+        if (!editCategoryName.trim()) return alert('กรุณากรอกชื่อหมวดหมู่');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/categories/${id}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ name: editCategoryName.trim() })
+            });
+            if (res.ok) { setEditingCategory(null); fetchCategories(); } 
+            else { const data = await res.json(); alert(data.error); }
+        } catch (err) { alert('เกิดข้อผิดพลาด'); }
+    };
+
+    const handleDeleteCategory = async (id: number) => {
+        if (!window.confirm('⚠️ ลบหมวดหมู่นี้ทิ้งใช่หรือไม่?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/categories/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) fetchCategories(); else { const data = await res.json(); alert(data.error); }
+        } catch (err) { alert('เกิดข้อผิดพลาด'); }
+    };
+
+    // 🌟 --- Handlers: จัดการสิทธิ์ (Admin) ---
+    const handleChangeRole = async (userId: number, newRole: string) => {
+        if (!window.confirm(`แน่ใจหรือไม่ที่จะเปลี่ยนสิทธิ์ผู้ใช้นี้เป็น "${newRole}"?`)) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/users/${userId}/role`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ role: newRole })
+            });
+            if (res.ok) { alert("อัปเดตสิทธิ์สำเร็จ!"); fetchUsersList(); } 
+            else { const data = await res.json(); alert(data.error); }
+        } catch (err) { alert('เกิดข้อผิดพลาด'); }
+    };
+
+
     // --- Render Helpers ---
     const renderTargetInfo = (report: Report) => {
         if (report.target_type === 'novel' || report.target_type === 'manga') {
@@ -374,12 +477,18 @@ export function AdminDashboard() {
                 <SidebarItem id="banned_works" icon={BookX} label="แบนงานเขียน" />
                 <SidebarItem id="history" icon={History} label="ประวัติรายงาน" />
 
-                {/* 🌟 ซ่อนเมนูตั้งค่าระบบ ถ้าไม่ใช่ Super Admin */}
+                {/* 🌟 เมนูตั้งค่าระบบ สำหรับ Super Admin */}
                 {adminRole === 'super_admin' && (
                     <>
-                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>ตั้งค่าระดับสูง</div>
+                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>จัดการหมวดหมู่</div>
                         <SidebarItem id="categories" icon={ListTree} label="จัดการหมวดหมู่" />
+                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>ตั้งค่าBanner</div>
+                        <SidebarItem id="banner" icon={ListTree} label="จัดการBanner" />
+                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>จัดการสิทธิ์</div>
                         <SidebarItem id="admins" icon={UserCog} label="จัดการสิทธิ์(Admin)" />
+                        
+
+
                     </>
                 )}
 
@@ -572,20 +681,135 @@ export function AdminDashboard() {
                     </div>
                 )}
 
-                {/* 🔴 TAB อื่นๆ (เฉพาะ Super Admin เท่านั้น หรือซ่อนไปเลย) */}
-                {activeTab !== 'reports' && activeTab !== 'history' && activeTab !== 'banned_users' && activeTab !== 'banned_works' && (
-                    <div style={{ textAlign: 'center', padding: '100px 20px', color: '#888' }}>
-                        {adminRole !== 'super_admin' && (activeTab === 'categories' || activeTab === 'admins') ? (
-                            <>
-                                <div style={{ fontSize: '60px', marginBottom: '20px' }}>⛔</div>
-                                <h2 style={{ color: '#e11d48' }}>ไม่มีสิทธิ์เข้าถึงส่วนนี้</h2>
-                                <p>เฉพาะ Super Admin เท่านั้นที่สามารถจัดการระบบนี้ได้</p>
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ fontSize: '60px', marginBottom: '20px' }}>🚧</div>
-                                <h2 style={{ color: '#555' }}>กำลังพัฒนาระบบส่วนนี้...</h2>
-                            </>
+                {/* 🌟 TAB 5: จัดการหมวดหมู่ (Categories) */}
+                {activeTab === 'categories' && adminRole === 'super_admin' && (
+                    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
+                        <div style={headerSection}>
+                            <div><h1 style={pageTitle}>จัดการหมวดหมู่</h1><p style={pageSubtitle}>เพิ่ม ลบ หรือแก้ไขรายชื่อหมวดหมู่ของนิยายและการ์ตูน</p></div>
+                        </div>
+
+                        <div style={{ ...contentCard, padding: '20px', marginBottom: '30px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+                            <input type="text" placeholder="พิมพ์ชื่อหมวดหมู่ใหม่ที่นี่..." value={newCategory} onChange={e => setNewCategory(e.target.value)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '15px', outline: 'none' }} />
+                            <button onClick={handleAddCategory} style={{ padding: '12px 25px', background: '#9b67bd', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>+ เพิ่มหมวดหมู่</button>
+                        </div>
+
+                        {loading ? ( <div style={{ textAlign: 'center', padding: '50px' }}>⏳ กำลังโหลดข้อมูล...</div> ) : (
+                            <div style={contentCard}>
+                                <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px' }}>รายการหมวดหมู่ทั้งหมด ({categories.length})</h3></div>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={tableStyle}>
+                                        <thead><tr style={tableHeadRow}><th style={{...thStyle, width: '80px'}}>ID</th><th style={thStyle}>ชื่อหมวดหมู่</th><th style={{ ...thStyle, textAlign: 'center', width: '150px' }}>จัดการ</th></tr></thead>
+                                        <tbody>
+                                            {categories.map(cat => (
+                                                <tr key={cat.id} style={tableRowStyle}>
+                                                    <td style={{...tdStyle, color: '#888'}}>#{cat.id}</td>
+                                                    <td style={tdStyle}>
+                                                        {editingCategory === cat.id ? (
+                                                            <input type="text" value={editCategoryName} onChange={e => setEditCategoryName(e.target.value)} style={{ padding: '8px', width: '100%', borderRadius: '5px', border: '1px solid #9b67bd', outline: 'none' }} />
+                                                        ) : ( <strong style={{color: '#333'}}>{cat.name}</strong> )}
+                                                    </td>
+                                                    <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                                        {editingCategory === cat.id ? (
+                                                            <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                                                                <button onClick={() => saveEditCategory(cat.id)} style={{ padding: '6px 12px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>บันทึก</button>
+                                                                <button onClick={() => setEditingCategory(null)} style={{ padding: '6px 12px', background: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer' }}>ยกเลิก</button>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                                                                <button onClick={() => { setEditingCategory(cat.id); setEditCategoryName(cat.name); }} style={{ padding: '6px 12px', background: '#f3e8ff', color: '#9b67bd', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>แก้ไข</button>
+                                                                <button onClick={() => handleDeleteCategory(cat.id)} style={{ padding: '6px 12px', background: '#fff1f0', color: '#e11d48', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>ลบ</button>
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* 🌟 TAB 6: จัดการสิทธิ์ Admin (Role Management) */}
+                {activeTab === 'admins' && adminRole === 'super_admin' && (
+                    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
+                        <div style={headerSection}>
+                            <div><h1 style={pageTitle}>จัดการสิทธิ์ทีมงาน</h1><p style={pageSubtitle}>แต่งตั้งหรือปลดผู้ดูแลระบบ (Admin)</p></div>
+                        </div>
+
+                        {/* 🌟 ช่องค้นหาผู้ใช้ */}
+                        <div style={{ ...contentCard, padding: '15px 20px', marginBottom: '25px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <Search size={20} color="#888" />
+                            <input 
+                                type="text" 
+                                placeholder="ค้นหาด้วย ID, ชื่อผู้ใช้ หรือนามปากกา..." 
+                                value={searchUser} 
+                                onChange={e => setSearchUser(e.target.value)} 
+                                style={{ flex: 1, padding: '8px', border: 'none', fontSize: '15px', outline: 'none' }} 
+                            />
+                            {searchUser && (
+                                <button onClick={() => setSearchUser('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', display: 'flex', padding: '5px' }}>
+                                    <X size={18} />
+                                </button>
+                            )}
+                        </div>
+
+                        {loading ? ( <div style={{ textAlign: 'center', padding: '50px', color: '#9b67bd' }}>⏳ กำลังโหลดรายชื่อ...</div> ) : (
+                            <div style={contentCard}>
+                                <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px' }}>รายชื่อผู้ใช้งานทั้งหมด ({filteredUsers.length})</h3></div>
+                                <div style={{ overflowX: 'auto' }}>
+                                    <table style={tableStyle}>
+                                        <thead>
+                                            <tr style={tableHeadRow}>
+                                                <th style={{...thStyle, width: '80px'}}>ID</th>
+                                                <th style={thStyle}>ชื่อผู้ใช้ / นามปากกา</th>
+                                                <th style={thStyle}>ระดับสิทธิ์ปัจจุบัน</th>
+                                                <th style={{ ...thStyle, textAlign: 'center', width: '200px' }}>จัดการสิทธิ์</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredUsers.length === 0 ? ( 
+                                                <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#888' }}>{searchUser ? '❌ ไม่พบผู้ใช้งานที่ค้นหา' : 'ไม่พบข้อมูล'}</td></tr> 
+                                            ) : (
+                                                filteredUsers.map(u => (
+                                                    <tr key={u.id} style={tableRowStyle}>
+                                                        <td style={{...tdStyle, color: '#888'}}>#{u.id}</td>
+                                                        <td style={tdStyle}>
+                                                            <div style={{ fontWeight: 'bold', color: '#333' }}>{u.username}</div>
+                                                            <div style={{ fontSize: '13px', color: '#888' }}>{u.author ? `✍️ ${u.author}` : 'ไม่มีนามปากกา'}</div>
+                                                        </td>
+                                                        <td style={tdStyle}>
+                                                            <span style={{ 
+                                                                padding: '6px 12px', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold',
+                                                                background: u.role === 'super_admin' ? '#fff0f6' : u.role === 'admin' ? '#f0f9ff' : '#f5f5f5',
+                                                                color: u.role === 'super_admin' ? '#c41d7f' : u.role === 'admin' ? '#096dd9' : '#555',
+                                                                border: `1px solid ${u.role === 'super_admin' ? '#ffadd2' : u.role === 'admin' ? '#91caff' : '#d9d9d9'}`
+                                                            }}>
+                                                                {u.role === 'super_admin' ? '👑 Super Admin' : u.role === 'admin' ? '🛡️ Admin' : '👤 User'}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ ...tdStyle, textAlign: 'center' }}>
+                                                            {u.role === 'super_admin' ? (
+                                                                <span style={{ fontSize: '13px', color: '#aaa' }}>ผู้มีอำนาจสูงสุด</span>
+                                                            ) : (
+                                                                <select 
+                                                                    value={u.role} 
+                                                                    onChange={(e) => handleChangeRole(u.id, e.target.value)}
+                                                                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', outline: 'none', cursor: 'pointer', background: u.role === 'admin' ? '#e6f7ff' : '#fff', width: '100%' }}
+                                                                >
+                                                                    <option value="user">ปลดเป็น User ธรรมดา</option>
+                                                                    <option value="admin">แต่งตั้งเป็น Admin</option>
+                                                                </select>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}
