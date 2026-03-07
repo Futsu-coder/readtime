@@ -148,7 +148,7 @@ export function HomePage() {
                     </div>
                     
                     {displayedWorks.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>ยังไม่มีผลงานในหมวดหมู่นี้ 😅</div>
+                        <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>ยังไม่มีผลงานในหมวดหมู่นี้ </div>
                     ) : (
                         <div style={bookGrid}>
                             {displayedWorks.map((work) => (

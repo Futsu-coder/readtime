@@ -140,7 +140,7 @@ export function CreateMangaChapterPage() {
             <div style={formWrapper}>
                 
                 <div style={inputGroup}>
-                    <h2 style={{ textAlign: 'center', color: '#ff7b00', marginBottom: '20px' }}>อัปโหลดตอนมังงะใหม่ 🎨</h2>
+                    <h2 style={{ textAlign: 'center', color: '#9b67bd', marginBottom: '20px' }}>อัปโหลดตอนมังงะใหม่ </h2>
                     
                     <div style={titleRow}>
                         <span style={labelPurpleText}>เลขตอน<span style={{color: 'red'}}>*</span></span>
@@ -177,10 +177,10 @@ export function CreateMangaChapterPage() {
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{ ...plusIconCircle, borderColor: '#ff7b00', margin: '0 auto 15px auto' }}>
-                                        <Plus size={40} color="#ff7b00" strokeWidth={2.5} />
+                                    <div style={{ ...plusIconCircle, borderColor: '#9b67bd', margin: '0 auto 15px auto' }}>
+                                        <Plus size={40} color="#9b67bd" strokeWidth={2.5} />
                                     </div>
-                                    <p style={{ color: '#ff922b', fontWeight: 'bold' }}>คลิกเพื่อเลือกรูปภาพหน้ามังงะ</p>
+                                    <p style={{ color: '#9b67bd', fontWeight: 'bold' }}>คลิกเพื่อเลือกรูปภาพหน้ามังงะ</p>
                                 </div>
                             </div>
                         ) : (
@@ -207,7 +207,7 @@ export function CreateMangaChapterPage() {
 
                                         {/* ข้อมูลลำดับหน้า */}
                                         <div style={{ width: '60px', textAlign: 'center' }}>
-                                            <h3 style={{ margin: 0, color: '#ff7b00', fontSize: '1.2rem' }}>{index + 1}</h3>
+                                            <h3 style={{ margin: 0, color: '#9b67bd', fontSize: '1.2rem' }}>{index + 1}</h3>
                                             <span style={{ fontSize: '0.75rem', color: '#999' }}>หน้า</span>
                                         </div>
 
@@ -232,7 +232,7 @@ export function CreateMangaChapterPage() {
                         )}
                         <button 
                             onClick={() => fileInputRef.current?.click()}
-                            style={{ background: '#fff4e6', color: '#ff7b00', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginTop:'10px',justifyContent: 'center'}}
+                            style={{ background: '#fff4e6', color: '#9b67bd', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginTop:'10px',justifyContent: 'center'}}
                         >
                             <Plus size={18} strokeWidth={3}  /> เพิ่มรูปภาพ
                         </button>
@@ -248,10 +248,10 @@ export function CreateMangaChapterPage() {
                             <div style={toggleRow}>
                                 <span style={toggleLabel}>สถานะ</span>
                                 <div style={switchContainer}>
-                                    <div style={{...switchBase, backgroundColor: isPublished ? '#ff7b00' : '#ccc'}} onClick={handleTogglePublish}>
+                                    <div style={{...switchBase, backgroundColor: isPublished ? '#9b67bd' : '#ccc'}} onClick={handleTogglePublish}>
                                         <div style={{...switchThumb, left: isPublished ? '18px' : '2px'}} />
                                     </div>
-                                    <span style={{...statusText, color: isPublished ? '#ff7b00' : '#999'}}>{isPublished ? 'เผยแพร่' : 'ร่าง'}</span>
+                                    <span style={{...statusText, color: isPublished ? '#9b67bd' : '#999'}}>{isPublished ? 'เผยแพร่' : 'ร่าง'}</span>
                                 </div>
                             </div>
                         </div>
@@ -269,10 +269,10 @@ export function CreateMangaChapterPage() {
             {/* --- Modals (เหมือนเดิม) --- */}
             {showPublishModal && (
                 <div style={modalOverlay}>
-                    <div style={{ ...modalContainer, borderColor: '#ff7b00' }}>
+                    <div style={{ ...modalContainer, borderColor: '#9b67bd' }}>
                         <h2 style={modalTitle}>ต้องการเผยแพร่หรือไม่</h2>
                         <div style={modalActionArea}>
-                            <button style={{ ...btnPublishNow, background: '#ff7b00' }} onClick={() => { setIsPublished(true); setShowPublishModal(false); }}>เผยแพร่เลย</button>
+                            <button style={{ ...btnPublishNow, background: '#9b67bd' }} onClick={() => { setIsPublished(true); setShowPublishModal(false); }}>เผยแพร่เลย</button>
                             <button style={btnKeepDraft} onClick={() => { setIsPublished(false); setShowPublishModal(false); }}>เป็นร่างไว้ก่อน</button>
                         </div>
                     </div>
@@ -281,10 +281,10 @@ export function CreateMangaChapterPage() {
 
             {showSaveConfirm && (
                 <div style={modalOverlay}>
-                    <div style={{ ...modalContainer, borderColor: '#ff7b00' }}>
+                    <div style={{ ...modalContainer, borderColor: '#9b67bd' }}>
                         <h2 style={modalTitle}>อัปโหลดมังงะใช่หรือไม่?</h2>
                         <div style={modalActionArea}>
-                            <button style={{ ...btnPublishNow, background: '#ff7b00' }} onClick={handleSaveAPI}>ตกลงอัปโหลด</button>
+                            <button style={{ ...btnPublishNow, background: '#9b67bd' }} onClick={handleSaveAPI}>ตกลงอัปโหลด</button>
                             <button style={btnKeepDraft} onClick={() => setShowSaveConfirm(false)}>ยกเลิก</button>
                         </div>
                     </div>
@@ -312,20 +312,20 @@ export function CreateMangaChapterPage() {
 // --- Styles ของมังงะ (ธีมสีส้ม) ---
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', padding: '40px 20px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
 const headerNav = { maxWidth: '850px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#ff7b00', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
+const backBtn = { background: 'none', border: 'none', color: '#9b67bd', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
 const formWrapper: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '30px', padding: '40px', width: '100%', maxWidth: '850px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '35px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' };
 const inputGroup = { display: 'flex', flexDirection: 'column' as const, gap: '15px' };
 const titleRow = { display: 'flex', alignItems: 'center', gap: '15px' };
-const labelPurpleText = { color: '#ff7b00', fontSize: '20px', fontWeight: 'bold' };
+const labelPurpleText = { color: '#9b67bd', fontSize: '20px', fontWeight: 'bold' };
 const titleInput = { flex: 1, height: '50px', borderRadius: '15px', border: '1.5px solid #eee', backgroundColor: '#fff', outline: 'none', padding: '0 20px', fontSize: '16px' , color:'black'};
 
 const contentListContainer = { display: 'flex', flexDirection: 'column' as const, width: '100%' };
 const uploadBoxLarge: React.CSSProperties = { width: '100%', padding: '60px 0', backgroundColor: '#fdfdfd', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', transition: '0.2s' };
-const plusIconCircle = { width: '60px', height: '60px', borderRadius: '50%', border: '3px solid #ff7b00', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' };
+const plusIconCircle = { width: '60px', height: '60px', borderRadius: '50%', border: '3px solid #9b67bd', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' };
 
 const actionSection = { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '35px', marginTop: '20px' };
 const statusRowContainer = { display: 'flex', alignItems: 'center', gap: '15px', width: '100%', justifyContent: 'center' };
-const mainStatusLabel = { color: '#ff7b00', fontSize: '20px', fontWeight: 'bold' };
+const mainStatusLabel = { color: '#9b67bd', fontSize: '20px', fontWeight: 'bold' };
 const whiteStatusBox: React.CSSProperties = { backgroundColor: '#fcfcfc', border: '1px solid #eee', borderRadius: '20px', padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '300px' };
 const toggleRow = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 const toggleLabel = { fontSize: '16px', color: '#666', fontWeight: 'bold' };
@@ -336,10 +336,10 @@ const statusText = { fontSize: '14px', width: '50px', textAlign: 'left' as const
 
 const buttonGroup = { display: 'flex', gap: '20px' };
 const cancelBtn = { padding: '14px 40px', borderRadius: '25px', border: 'none', backgroundColor: '#eee', color: '#666', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold' };
-const saveBtn = { padding: '14px 50px', borderRadius: '25px', border: 'none', backgroundColor: '#ff7b00', color: '#fff', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(255, 123, 0, 0.3)' };
+const saveBtn = { padding: '14px 50px', borderRadius: '25px', border: 'none', backgroundColor: '#9b67bd', color: '#fff', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(155, 103, 189, 0.3)' };
 
 const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' };
-const modalContainer: React.CSSProperties = { width: '400px', backgroundColor: '#fff', borderRadius: '35px', padding: '45px 35px', textAlign: 'center', border: '4px solid #ff7b00', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' };
+const modalContainer: React.CSSProperties = { width: '400px', backgroundColor: '#fff', borderRadius: '35px', padding: '45px 35px', textAlign: 'center', border: '4px solid #9b67bd', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' };
 const modalTitle = { fontSize: '24px', fontWeight: 'bold', color: '#333', marginBottom: '25px' };
 const modalActionArea = { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '15px' };
 const btnPublishNow: React.CSSProperties = { width: '100%', padding: '15px 0', color: '#fff', border: 'none', borderRadius: '30px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' };

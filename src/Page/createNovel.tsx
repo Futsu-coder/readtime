@@ -110,12 +110,11 @@ export function CreateNovel() {
                                 <select 
                                     value={category} 
                                     onChange={(e) => setCategory(e.target.value)} 
-                                    style={{...textInput, appearance: 'auto'}}
+                                    style={{...textInput, appearance: 'auto', color: '#333'}}
                                 >
-                                    <option value="General">ทั่วไป</option>
-                                    <option value="Fantasy">แฟนตาซี</option>
-                                    <option value="Romance">รักโรแมนติก</option>
                                     <option value="Action">แอคชั่น</option>
+                                    <option value="Fantasy">แฟนตาซี</option>
+                                    <option value="Comedy">ตลก</option>
                                 </select>
                             </div>
                         </div>
