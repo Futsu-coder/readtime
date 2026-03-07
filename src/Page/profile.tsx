@@ -89,11 +89,6 @@ export function ProfilePage() {
     return (
         <div style={containerStyle}>
             <div style={contentWrapper}>
-                <div style={{ marginBottom: "20px" }}>
-                    <Link to="/" style={{ color: "#bc7df2", textDecoration: "none", fontWeight: 'bold' }}>
-                        &larr; กลับหน้าหลัก
-                    </Link>
-                </div>
 
                 <h2 style={pageTitle}>โปรไฟล์ของฉัน</h2>
                 
@@ -180,7 +175,7 @@ export function ProfilePage() {
     );
 }
 
-const containerStyle: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
+const containerStyle: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#ffffff', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
 const contentWrapper: React.CSSProperties = { maxWidth: '1000px', margin: '40px auto', padding: '0 20px' };
 const pageTitle: React.CSSProperties = { color: '#9b67bd', fontSize: '32px', marginBottom: '25px', fontWeight: 'bold' };
 const profileCardBg: React.CSSProperties = { backgroundColor: '#ededed', borderRadius: '25px', padding: '50px', display: 'flex', gap: '50px', alignItems: 'center' };

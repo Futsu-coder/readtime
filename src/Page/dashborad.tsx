@@ -13,6 +13,9 @@ export function MyDashborad() {
     const [activeFilter, setActiveFilter] = useState<'all' | 'novel' | 'manga'>('all'); 
     const typeDropdownRef = useRef<HTMLDivElement>(null);
     const manageDropdownRef = useRef<HTMLDivElement>(null);
+    const [deleteTarget, setDeleteTarget] = useState<{id: number, title: string, type: 'novel' | 'manga'} | null>(null);
+    // เพิ่ม state สำหรับจัดการป็อปอัพสำเร็จ
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
         const fetchAllMyWorks = async () => {
@@ -54,15 +57,17 @@ export function MyDashborad() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const handleDelete = async (id: number, title: string, type: 'novel' | 'manga', e: React.MouseEvent) => {
+    // ฟังก์ชันจัดการตอนคลิกปุ่มถังขยะ (แค่เปิด Modal)
+    const handleDelete = (id: number, title: string, type: 'novel' | 'manga', e: React.MouseEvent) => {
         e.stopPropagation();
-        
-        const confirmDelete = window.confirm(`แน่ใจไหมว่าจะลบ ${type === 'manga' ? 'มังงะ' : 'นิยาย'} เรื่อง "${title}" ?\n(การลบจะทำให้ตอนทั้งหมดหายไปด้วย และไม่สามารถกู้คืนได้)`);
-        if (!confirmDelete) return;
+        setDeleteTarget({ id, title, type });
+    };
 
+    // ฟังก์ชันจัดการลบข้อมูลผ่าน API จริงๆ
+    const performDelete = async (target: {id: number, title: string, type: 'novel' | 'manga'}) => {
         try {
             const token = localStorage.getItem('token');
-            const url = type === 'manga' ? `${API_URL}/api/protected/manga/${id}` : `${API_URL}/api/protected/novels/${id}`;
+            const url = target.type === 'manga' ? `${API_URL}/api/protected/manga/${target.id}` : `${API_URL}/api/protected/novels/${target.id}`;
 
             const res = await fetch(url, {
                 method: 'DELETE',
@@ -70,8 +75,9 @@ export function MyDashborad() {
             });
 
             if (res.ok) {
-                setWorks(prev => prev.filter(work => !(work.id === id && work.type === type)));
-                alert("ลบผลงานเรียบร้อยแล้ว");
+                setWorks(prev => prev.filter(work => !(work.id === target.id && work.type === target.type)));
+                // เปลี่ยน alert("ลบผลงานเรียบร้อยแล้ว"); เป็นการเปิดป็อปอัพสำเร็จ
+                setShowSuccessModal(true);
             } else {
                 const data = await res.json() as any;
                 alert(`ลบไม่สำเร็จ: ${data.error || 'เกิดข้อผิดพลาด'}`);
@@ -104,8 +110,6 @@ export function MyDashborad() {
             paddingBottom: '80px' 
         }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 30px' }}>
-                
-
                 <h2 style={{ fontSize: '38px', color: '#9b67bd', fontWeight: 'bold', marginBottom: '40px' }}>Writing ✎</h2>
 
                 <div style={{ backgroundColor: '#fff', borderRadius: '25px', padding: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' }}>
@@ -220,6 +224,71 @@ export function MyDashborad() {
                     >
                         {showTypeDropdown ? '✕ ปิดหน้าต่าง' : '+ เพิ่มงานเขียน'}
                     </button>
+
+                    {/* ส่วนของ Modal ยืนยันการลบที่เพิ่มเข้ามา */}
+                    {deleteTarget && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                            <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '20px', width: '400px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                                <h3 style={{ color: '#333', marginBottom: '15px' }}>ยืนยันการลบ</h3>
+                                <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.5' }}>
+                                    แน่ใจไหมว่าจะลบ {deleteTarget.type === 'manga' ? 'มังงะ' : 'นิยาย'} เรื่อง <br/>
+                                    <span style={{ fontWeight: 'bold', color: '#9b67bd' }}>"{deleteTarget.title}"</span> ?
+                                    <br/>
+                                    <span style={{ fontSize: '13px', color: '#ff4d4f' }}>(การลบจะไม่สามารถกู้คืนได้)</span>
+                                </p>
+                                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                                    <button 
+                                        onClick={() => setDeleteTarget(null)} 
+                                        style={{ padding: '10px 25px', borderRadius: '12px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#555', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s' }}
+                                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                                        onMouseOut={e => e.currentTarget.style.backgroundColor = '#fff'}
+                                    >
+                                        ยกเลิก
+                                    </button>
+                                    <button 
+                                        onClick={() => { performDelete(deleteTarget); setDeleteTarget(null); }} 
+                                        style={{ padding: '10px 25px', borderRadius: '12px', backgroundColor: '#ff4d4f', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s', boxShadow: '0 4px 10px rgba(255, 77, 79, 0.3)' }}
+                                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#ff7875'}
+                                        onMouseOut={e => e.currentTarget.style.backgroundColor = '#ff4d4f'}
+                                    >
+                                        ลบผลงาน
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- เพิ่มส่วนของ Modal แจ้งเตือนสำเร็จ --- */}
+                    {showSuccessModal && (
+                        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                            <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '20px', width: '350px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                                <h3 style={{ color: '#333', marginBottom: '15px' }}>แจ้งเตือน</h3>
+                                <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.5' }}>
+                                    ลบผลงานเรียบร้อยแล้ว
+                                </p>
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <button 
+                                        onClick={() => setShowSuccessModal(false)} 
+                                        style={{ 
+                                            padding: '10px 25px', 
+                                            borderRadius: '12px', 
+                                            backgroundColor: '#bc7df2', // ใช้สีประจำธีมม่วง
+                                            color: '#fff', 
+                                            border: 'none', 
+                                            cursor: 'pointer', 
+                                            fontWeight: 'bold', 
+                                            transition: '0.2s', 
+                                            boxShadow: '0 4px 10px rgba(188, 125, 242, 0.3)' 
+                                        }}
+                                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#d09eff'} // Slight lighter hover
+                                        onMouseOut={e => e.currentTarget.style.backgroundColor = '#bc7df2'}
+                                    >
+                                        ตกลง
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

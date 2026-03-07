@@ -79,7 +79,7 @@ export function CommentSection({ workType, workId, chapterId }: CommentSectionPr
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         placeholder="แชร์ความรู้สึกหลังอ่านตอนนี้หน่อย..."
-                        style={{ width: "100%", height: "100px", padding: "5px 0px 0px 5px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "1rem", marginBottom: "10px", outline: "none", resize: "vertical" }}
+                        style={{ width: "100%", height: "100px", padding: "5px 0px 0px 5px", borderRadius: "8px", border: "1px solid #ddd", fontSize: "1rem", marginBottom: "10px", outline: "none", resize: "vertical",background: "white", color: "#333" }}
                         onFocus={(e) => e.target.style.borderColor = themeColor}
                         onBlur={(e) => e.target.style.borderColor = "#ddd"}
                     />

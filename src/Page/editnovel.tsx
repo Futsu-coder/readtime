@@ -131,10 +131,6 @@ export function EditNovelPage() {
         <div style={{ background: '#f5f5f5', minHeight: '100vh', padding: '40px 20px', fontFamily: "'Sarabun', sans-serif" }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
                 
-                {/* ปุ่มย้อนกลับ */}
-                <Link to="/dashborad" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#bc7df2', textDecoration: 'none', marginBottom: '20px', fontWeight: 'bold' }}>
-                    <span>‹</span> ย้อนกลับ
-                </Link>
 
                 {/* ส่วนหัวนิยาย (Card สีเทาอ่อน) */}
                 <div style={{ background: '#ebebeb', borderRadius: '30px', padding: '40px', display: 'flex', gap: '40px', marginBottom: '30px', position: 'relative' }}>

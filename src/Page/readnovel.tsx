@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { client,API_URL } from "../client";
+import { client, API_URL } from "../client";
 import { CommentSection } from "../components/comment";
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -23,6 +23,13 @@ export function Readchapterpage() {
     const [allChapters, setAllChapters] = useState<ChapterItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+
+    // จำลองข้อมูลนิยาย (คุณสามารถดึงจาก API มาแทนที่ได้)
+    const mockNovelInfo = {
+        title: "ชื่อนิยายของคุณ",
+        author: "นามปากกานักเขียน",
+        coverUrl: "https://via.placeholder.com/60x80?text=Cover"
+    };
 
     useEffect(() => {
         const fetchAllChapters = async () => {
@@ -119,43 +126,120 @@ export function Readchapterpage() {
     if (!chapter) return null;
 
     return (
-        <div style={{ fontFamily: "'Sarabun', sans-serif", background: '#f9f9f9', minHeight: '100vh' }}>
-.            
-            <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', padding: '40px', minHeight: '100vh', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
-                <div style={{ borderBottom: '1px solid #eee', paddingBottom: '20px', marginBottom: '30px' }}>
-                    <h1 style={{ margin: '0 0 10px 0', color: '#333' }}>{chapter.title}</h1>
-                    <Link to={`/novel/${id}`} style={{ textDecoration: 'none', color: '#888' }}>&larr; กลับไปที่หน้าหลัก</Link>
+        <div style={{ fontFamily: "'Sarabun', sans-serif", background: '#ffffff', minHeight: '100vh', paddingBottom: '40px' }}>
+            
+            {/* Top Navigation Bar (Sticky) */}
+            <div style={{ 
+                position: 'sticky', top: 0, backgroundColor: '#ffffff', zIndex: 50,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                padding: '12px 20px', borderBottom: '1px solid #f0f0f0',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.02)'
+            }}>
+                <div style={{ color: '#9b59b6', fontSize: '18px', fontWeight: '500' }}>
+                    {chapter.title}
+                </div>
+                
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                    {/* สารบัญ */}
+                    <button onClick={() => navigate(`/novel/${id}`)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#9b59b6' }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        <span style={{ fontSize: '10px', marginTop: '4px' }}>สารบัญ</span>
+                    </button>
+                    {/* ตั้งค่าอ่าน */}
+                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#9b59b6' }}>
+                        <span style={{ fontSize: '16px', fontWeight: 'bold', lineHeight: '20px' }}>Aa</span>
+                        <span style={{ fontSize: '10px', marginTop: '4px' }}>ตั้งค่าอ่าน</span>
+                    </button>
+                    {/* เพิ่มเข้าชั้น */}
+                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#9b59b6' }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        <span style={{ fontSize: '10px', marginTop: '4px' }}>เพิ่มเข้าชั้น</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Main Content Container */}
+            <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+                
+                {/* Header Section (Title & Author) */}
+                <div style={{ textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
+                    <div style={{ color: '#888', fontSize: '14px' }}>เรื่อง : {mockNovelInfo.title}</div>
+                    <h1 style={{ color: '#9b59b6', fontSize: '24px', fontWeight: 'normal', margin: '12px 0' }}>{chapter.title}</h1>
+                    <div style={{ color: '#888', fontSize: '14px' }}>โดย {mockNovelInfo.author}</div>
                 </div>
 
+                {/* Story Content */}
                 <div 
                     className="ql-editor" 
-                    style={{ fontSize: '1.2rem', lineHeight: '1.8', color: '#000000', marginBottom: '50px', padding: '0' }}
+                    style={{ 
+                        fontSize: '1.15rem', 
+                        lineHeight: '2', 
+                        color: '#333333', 
+                        marginBottom: '60px', 
+                        padding: '0',
+                        textAlign: 'center' // จัดข้อความกึ่งกลางตามแบบในรูป
+                    }}
                     dangerouslySetInnerHTML={{ __html: chapter.content }}
                 />
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', paddingTop: '30px' }}>
+                {/* Footer Novel Info Card */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', padding: '0 10px' }}>
+                    <img src={mockNovelInfo.coverUrl} alt="cover" style={{ width: '60px', height: '80px', borderRadius: '4px', objectFit: 'cover' }} />
+                    <div>
+                        <div style={{ color: '#9b59b6', fontSize: '16px', marginBottom: '4px' }}>เรื่อง : {mockNovelInfo.title}</div>
+                        <div style={{ color: '#888', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#eee', display: 'inline-block' }}></div>
+                            {mockNovelInfo.author}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Navigation Buttons (Prev / Next) */}
+                <div style={{ 
+                    display: 'flex', 
+                    borderRadius: '8px', 
+                    overflow: 'hidden', 
+                    border: '1px solid #f0f0f0',
+                    marginBottom: '40px'
+                }}>
                     <button 
                         disabled={!prevChapter}
                         onClick={() => prevChapter && navigate(`/novel/${id}/chapters/${prevChapter.id}`)}
-                        style={{ visibility: prevChapter ? 'visible' : 'hidden', padding: '10px 20px', cursor: 'pointer', background: 'white', border: '1px solid #ddd', borderRadius: '4px' }}
+                        style={{ 
+                            flex: 1, 
+                            padding: '16px', 
+                            cursor: prevChapter ? 'pointer' : 'not-allowed', 
+                            background: '#f8f8f8', 
+                            color: prevChapter ? '#888' : '#ccc', 
+                            border: 'none',
+                            fontSize: '16px'
+                        }}
                     >
-                        &larr; ตอนก่อนหน้า
-                    </button>
-
-                    <button onClick={() => navigate(`/novel/${id}`)} style={{ cursor: 'pointer', background: 'transparent', border: 'none', color: '#888' }}>
-                        สารบัญ
+                        ตอนก่อนหน้า
                     </button>
                     <button 
                         disabled={!nextChapter}
                         onClick={() => nextChapter && navigate(`/novel/${id}/chapters/${nextChapter.id}`)}
-                        style={{ visibility: nextChapter ? 'visible' : 'hidden', padding: '10px 20px', cursor: 'pointer', background: '#6a4c93', color: 'white', border: 'none', borderRadius: '4px' }}
+                        style={{ 
+                            flex: 1, 
+                            padding: '16px', 
+                            cursor: nextChapter ? 'pointer' : 'not-allowed', 
+                            background: nextChapter ? '#c98bf2' : '#e6cbf7', 
+                            color: 'white', 
+                            border: 'none',
+                            fontSize: '16px'
+                        }}
                     >
-                        ตอนต่อไป &rarr;
+                        ตอนต่อไป
                     </button>
                 </div>
-                    {id && chapterId && (
+
+                {/* Comment Section */}
+                {id && chapterId && (
+                    <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '30px' }}>
                         <CommentSection workType="novel" workId={id!} chapterId={chapterId!} />
-                    )}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -54,7 +54,7 @@ export function EditChapterPage() {
     if (isLoading) return <div style={{textAlign:'center'}}>Loading...</div>
     return (
         <div style={{ maxWidth: '800px', margin: '20px auto', padding: '30px', background: 'white', borderRadius: '8px' }}>
-            <h2 style={{ borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '20px', color: '#b91c1c' }}>
+            <h2 style={{ borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '20px', color: '#bc7df2' }}>
                 แก้ไขเนื้อหาตอน <span style={{ fontSize: '0.6em', color: '#666' }}>({novelTitle})</span>
             </h2>
             <label style={{ fontWeight: 'bold' }}>ชื่อตอน:</label>
@@ -71,7 +71,7 @@ export function EditChapterPage() {
                 <span style={{ color: status.includes('❌') ? 'red' : 'green' }}>{status}</span>
                 <div>
                     <button onClick={() => navigate(`/dashborad`)} style={{ padding: '10px 20px', marginRight: '10px', background: '#ccc', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>ยกเลิก</button>
-                    <button onClick={handleUpdate} style={{ padding: '10px 30px', background: '9b67bd', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}> อัปเดตเนื้อหา</button>
+                    <button onClick={() => navigate(`/dashborad`)} style={{ padding: '10px 30px', background: '9b67bd', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}> อัปเดตเนื้อหา</button>
                 </div>
             </div>
         </div>

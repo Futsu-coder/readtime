@@ -98,7 +98,7 @@ export function ReadMangaPage() {
     const currentIndex = allChapters.findIndex((c) => c.id === currentIdNum);
     const prevChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : undefined;
     const nextChapter = currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : undefined;
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#555' }}>⏳ กำลังโหลดหน้ากระดาษ...</div>;
+    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#555' }}> กำลังโหลดหน้ากระดาษ...</div>;
     if (error) return <div style={{ textAlign: 'center', color: 'red', marginTop: '50px' }}>❌ {error}</div>;
     if (!chapter) return null;
 
