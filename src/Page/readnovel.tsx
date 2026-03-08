@@ -128,35 +128,6 @@ export function Readchapterpage() {
     return (
         <div style={{ fontFamily: "'Sarabun', sans-serif", background: '#ffffff', minHeight: '100vh', paddingBottom: '40px' }}>
             
-            {/* Top Navigation Bar (Sticky) */}
-            <div style={{ 
-                position: 'sticky', top: 0, backgroundColor: '#ffffff', zIndex: 50,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                padding: '12px 20px', borderBottom: '1px solid #f0f0f0',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.02)'
-            }}>
-                <div style={{ color: '#9b59b6', fontSize: '18px', fontWeight: '500' }}>
-                    {chapter.title}
-                </div>
-                
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                    {/* สารบัญ */}
-                    <button onClick={() => navigate(`/novel/${id}`)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#9b59b6' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                        <span style={{ fontSize: '10px', marginTop: '4px' }}>สารบัญ</span>
-                    </button>
-                    {/* ตั้งค่าอ่าน */}
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#9b59b6' }}>
-                        <span style={{ fontSize: '16px', fontWeight: 'bold', lineHeight: '20px' }}>Aa</span>
-                        <span style={{ fontSize: '10px', marginTop: '4px' }}>ตั้งค่าอ่าน</span>
-                    </button>
-                    {/* เพิ่มเข้าชั้น */}
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#9b59b6' }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                        <span style={{ fontSize: '10px', marginTop: '4px' }}>เพิ่มเข้าชั้น</span>
-                    </button>
-                </div>
-            </div>
 
             {/* Main Content Container */}
             <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
@@ -197,9 +168,7 @@ export function Readchapterpage() {
                 {/* Navigation Buttons (Prev / Next) */}
                 <div style={{ 
                     display: 'flex', 
-                    borderRadius: '8px', 
-                    overflow: 'hidden', 
-                    border: '1px solid #f0f0f0',
+                    gap: '16px', 
                     marginBottom: '40px'
                 }}>
                     <button 
@@ -211,7 +180,8 @@ export function Readchapterpage() {
                             cursor: prevChapter ? 'pointer' : 'not-allowed', 
                             background: '#f8f8f8', 
                             color: prevChapter ? '#888' : '#ccc', 
-                            border: 'none',
+                            border: '1px solid #f0f0f0', 
+                            borderRadius: '8px', 
                             fontSize: '16px'
                         }}
                     >
@@ -227,6 +197,7 @@ export function Readchapterpage() {
                             background: nextChapter ? '#c98bf2' : '#e6cbf7', 
                             color: 'white', 
                             border: 'none',
+                            borderRadius: '8px', 
                             fontSize: '16px'
                         }}
                     >
