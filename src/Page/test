@@ -1,22 +1,122 @@
-// หาโค้ดส่วนที่คุณสร้างนิยาย แล้วแก้เป็นแบบนี้ครับ:
+import React, { useState } from 'react';
+import { API_URL } from '../client';
+import { AlertTriangle, X, CheckCircle } from 'lucide-react';
 
-novelRoute.post('/', async (c) => {
-    // ... (โค้ดดึงข้อมูล title, description จาก c.req.json() และ user id เหมือนเดิม) ...
+interface ReportModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    workId: number;
+    workType: 'novel' | 'manga';
+    chapterTitle?: string | null; // ถ้ารายงานจากหน้าตอน ให้ส่งชื่อ/เลขตอนมาด้วย
+}
 
-    try {
-        // 🌟 1. เติมคำว่า RETURNING id เข้าไปท้ายคำสั่ง SQL
-        const result = await c.env.DB.prepare(
-            `INSERT INTO novels (title, description, category, owner_id) VALUES (?, ?, ?, ?) RETURNING id`
-        ).bind(body.title, body.description, body.category, user.id).first(); 
-        // 💡 (ใช้ .first() เพื่อดึงค่า ID แถวแรกที่เพิ่งสร้างออกมา)
+export function ReportModal({ isOpen, onClose, workId, workType, chapterTitle }: ReportModalProps) {
+    const [reason, setReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
 
-        // 🌟 2. ส่ง ID กลับไปให้ Frontend
-        return c.json({ 
-            message: 'สร้างนิยายสำเร็จ', 
-            id: result?.id  // ส่ง id คืนไปในชื่อตัวแปร "id"
-        });
+    if (!isOpen) return null;
 
-    } catch (e) {
-        return c.json({ error: 'สร้างนิยายไม่สำเร็จ' }, 500);
-    }
-});
+    const handleSubmit = async () => {
+        if (!reason.trim()) return alert('กรุณาระบุเหตุผลที่รายงาน');
+        setIsSubmitting(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('กรุณาเข้าสู่ระบบก่อนรายงานผลงาน');
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 💡 ทริค: ถ้ากดมาจากหน้าตอน เราจะเอาชื่อตอนไปแปะไว้ข้างหน้าเหตุผลให้แอดมินเห็นชัดๆ
+            const finalReason = chapterTitle 
+                ? `[แจ้งจากตอน: ${chapterTitle}] ${reason}` 
+                : reason;
+
+            const res = await fetch(`${API_URL}/api/protected/reports`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    target_id: workId,
+                    target_type: workType,
+                    reason: finalReason
+                })
+            });
+
+            if (res.ok) {
+                setIsSuccess(true);
+                setTimeout(() => {
+                    setIsSuccess(false);
+                    setReason('');
+                    onClose(); // ปิด Pop-up อัตโนมัติ
+                }, 2000);
+            } else {
+                const data = await res.json();
+                alert(`รายงานไม่สำเร็จ: ${data.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div style={overlayStyle}>
+            <div style={modalStyle}>
+                <button onClick={onClose} style={closeBtn}><X size={20} /></button>
+                
+                {isSuccess ? (
+                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                        <CheckCircle size={50} color="#4caf50" style={{ margin: '0 auto 15px' }} />
+                        <h2 style={{ color: '#4caf50', margin: 0 }}>ส่งรายงานสำเร็จ!</h2>
+                        <p style={{ color: '#666' }}>แอดมินจะรีบดำเนินการตรวจสอบให้เร็วที่สุดครับ</p>
+                    </div>
+                ) : (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                            <AlertTriangle size={24} color="#e11d48" />
+                            <h2 style={{ margin: 0, color: '#e11d48', fontSize: '20px' }}>รายงานความไม่เหมาะสม</h2>
+                        </div>
+                        
+                        <div style={{ marginBottom: '15px', padding: '10px', background: '#fff1f0', borderRadius: '8px', border: '1px solid #ffa39e' }}>
+                            <span style={{ fontWeight: 'bold', color: '#cf1322' }}>
+                                เป้าหมาย: {workType === 'novel' ? '📖 นิยาย' : '🎨 มังงะ'} 
+                            </span>
+                            {/* โชว์ชื่อตอนให้ User เห็นว่าระบบจับตอนให้อัตโนมัติ */}
+                            {chapterTitle && <div style={{ fontSize: '14px', color: '#cf1322', marginTop: '5px' }}>📌 ตอน: {chapterTitle}</div>}
+                        </div>
+
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#333' }}>เหตุผลที่รายงาน:</label>
+                        <textarea 
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            placeholder="เช่น เนื้อหารุนแรง, ละเมิดลิขสิทธิ์, สแปม..."
+                            style={textAreaStyle}
+                        />
+
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={isSubmitting}
+                            style={submitBtn(isSubmitting)}
+                        >
+                            {isSubmitting ? 'กำลังส่งรายงาน...' : 'ส่งรายงาน'}
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// --- Styles สำหรับ Modal ---
+const overlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
+const modalStyle: React.CSSProperties = { position: 'relative', width: '90%', maxWidth: '420px', backgroundColor: '#fff', padding: '30px', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' };
+const closeBtn: React.CSSProperties = { position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#999' };
+const textAreaStyle: React.CSSProperties = { width: '100%', height: '100px', padding: '12px', borderRadius: '10px', border: '1px solid #ccc', outline: 'none', resize: 'none', fontSize: '15px', marginBottom: '20px', boxSizing: 'border-box', fontFamily: 'inherit' };
+const submitBtn = (loading: boolean): React.CSSProperties => ({ width: '100%', padding: '12px', borderRadius: '10px', border: 'none', backgroundColor: loading ? '#ccc' : '#e11d48', color: '#fff', fontWeight: 'bold', fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', transition: '0.2s' });

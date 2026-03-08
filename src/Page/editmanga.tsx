@@ -12,6 +12,7 @@ interface Manga {
     category: string;
     owner_id: number;
     cover_image?: string | null;
+    is_completed?: number; // 🌟 รับค่าสถานะจบ 0 หรือ 1[cite: 20]
 }
 
 interface MangaChapter {
@@ -33,6 +34,7 @@ export function EditMangaPage() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState("");
+    const [isCompleted, setIsCompleted] = useState(0); // 🌟 State เก็บสถานะจบเนื้อเรื่อง[cite: 20]
     const [chapters, setChapters] = useState<MangaChapter[]>([]);
     const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null);
     const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -70,6 +72,7 @@ export function EditMangaPage() {
                     setCategory(data.manga.category || "");
                     setCurrentCoverUrl(data.manga.cover_image || null); 
                     setChapters(data.chapters || []);
+                    setIsCompleted(data.manga.is_completed || 0); // 🌟 โหลดค่าจาก DB[cite: 20]
                 } else {
                     alert("ไม่พบข้อมูลมังงะ (หรือคุณไม่ใช่เจ้าของผลงาน)");
                     navigate('/dashborad');
@@ -125,7 +128,7 @@ export function EditMangaPage() {
             const res = await fetch(`${API_URL}/api/protected/manga/${id}`, {
                 method: "PUT",
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ title, description, category })
+                body: JSON.stringify({ title, description, category, is_completed: isCompleted }) // 🌟 ส่งค่า is_completed ไปบันทึกด้วย[cite: 20]
             });
             if (res.ok) setStatusMsg("✅ บันทึกข้อมูลสำเร็จ");
             else setStatusMsg("❌ บันทึกไม่สำเร็จ");
@@ -233,18 +236,32 @@ export function EditMangaPage() {
                     <input type="text" value={title} onChange={e => setTitle(e.target.value)} style={{ width: '100%', padding: '12px 15px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff' , color:'#333', fontSize: '16px'}} />
                 </div>
                 
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color:'#555' }}>หมวดหมู่</label>
-                    <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '12px 15px', border: '1px solid #ddd', borderRadius: '8px' , background: '#fff' , color:'#333', fontSize: '16px'}}>
-                         {/* 🌟 ลูปหมวดหมู่จาก DB */}
-                         {categoriesList.length > 0 ? (
-                            categoriesList.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                            ))
-                        ) : (
-                            <option value="General">กำลังโหลดหมวดหมู่...</option>
-                        )}
-                    </select>
+                {/* 🌟 จัด Dropdown หมวดหมู่และสถานะให้อยู่คู่กัน[cite: 20] */}
+                <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color:'#555' }}>หมวดหมู่</label>
+                        <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '12px 15px', border: '1px solid #ddd', borderRadius: '8px' , background: '#fff' , color:'#333', fontSize: '16px'}}>
+                            {categoriesList.length > 0 ? (
+                                categoriesList.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))
+                            ) : (
+                                <option value="General">กำลังโหลดหมวดหมู่...</option>
+                            )}
+                        </select>
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color:'#555' }}>สถานะเนื้อเรื่อง</label>
+                        <select 
+                            value={isCompleted} 
+                            onChange={e => setIsCompleted(Number(e.target.value))} 
+                            style={{ width: '100%', padding: '12px 15px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff' , color:'#333', fontSize: '16px' }}
+                        >
+                            <option value={0}>กำลังแต่ง (Ongoing)</option>
+                            <option value={1}>จบแล้ว (Completed)</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div style={{ marginBottom: '40px' }}>
