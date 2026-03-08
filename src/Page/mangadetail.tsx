@@ -71,13 +71,25 @@ export function MangaDetailPage() {
 
     const handleBookmark = async () => {
         if (!isLoggedIn) return alert("กรุณาเข้าสู่ระบบก่อนเก็บผลงานเข้าชั้น");
-        const res = await fetch(`${API_URL}/api/protected/manga/${id}/bookmark`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (res.ok) {
-            const data = await res.json();
-            setIsBookmarked(data.isBookmarked);
+        
+        try {
+            // 🌟 แก้จาก /manga/ เป็น /mangas/ (เติม s)
+            const res = await fetch(`${API_URL}/api/protected/manga/${id}/bookmark`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                setIsBookmarked(data.isBookmarked);
+            } else {
+                // เพิ่ม Error Handling เผื่อไว้ดูว่าเกิดอะไรขึ้น
+                const errorData = await res.json();
+                console.error("Bookmark Error:", errorData);
+                alert("ไม่สามารถเพิ่มเข้าชั้นได้");
+            }
+        } catch (err) {
+            console.error("Fetch Error:", err);
         }
     };
     if (!manga) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#888' }}>กำลังโหลดรายละเอียด...</div>;

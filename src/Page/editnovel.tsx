@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; // 🌟 เพิ่ม useRef
+import { useState, useEffect, useRef } from "react"; 
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { client, API_URL } from "../client"; 
 import { NovelImage } from "../components/novelimage"; 
@@ -27,7 +27,7 @@ export function EditNovelPage() {
     const navigate = useNavigate();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("General");
+    const [category, setCategory] = useState("");
     const [chapters, setChapters] = useState<Chapter[]>([]); 
     const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null); 
     const [coverFile, setCoverFile] = useState<File | null>(null); 
@@ -37,12 +37,23 @@ export function EditNovelPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [statusMsg, setStatusMsg] = useState("");
 
+    // 🌟 State สำหรับเก็บรายการหมวดหมู่
+    const [categoriesList, setCategoriesList] = useState<string[]>([]);
+
     useEffect(() => {
-        const fetchNovel = async () => {
+        const fetchInitialData = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) { navigate('/login'); return; }
 
+                // 🌟 ดึงหมวดหมู่ทั้งหมดมาก่อน
+                const catRes = await fetch(`${API_URL}/api/public/categories`);
+                if (catRes.ok) {
+                    const catData = await catRes.json();
+                    if (catData.categories) setCategoriesList(catData.categories);
+                }
+
+                // ดึงข้อมูลนิยาย
                 const res = await client.api.protected.novels[":id"].$get(
                     { param: { id: id! } },
                     { headers: { Authorization: `Bearer ${token}` } }
@@ -52,7 +63,7 @@ export function EditNovelPage() {
                     const data = await res.json() as unknown as NovelResponse;
                     setTitle(data.novel.title);
                     setDescription(data.novel.description || "");
-                    setCategory(data.novel.category || "General");
+                    setCategory(data.novel.category || "");
                     setCurrentCoverUrl(data.novel.cover_image||null); 
                     setChapters(data.chapters || []);
                 } else {
@@ -66,7 +77,7 @@ export function EditNovelPage() {
                 setIsLoading(false);
             }
         };
-        if (id) fetchNovel();
+        if (id) fetchInitialData();
     }, [id, navigate]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +108,7 @@ export function EditNovelPage() {
                 setCoverFile(null); setCoverPreview(null);
             } else { setStatusMsg(`อัปโหลดไม่สำเร็จ`); }
         } catch (err) { 
-            console.log(err)
+            console.error(err)
             setStatusMsg("เกิดข้อผิดพลาดในการเชื่อมต่อ"); } 
         finally { setIsUploading(false); setTimeout(() => setStatusMsg(""), 3000); }
     };
@@ -113,7 +124,7 @@ export function EditNovelPage() {
             if (res.ok) setStatusMsg("บันทึกข้อมูลสำเร็จ!");
             else setStatusMsg("บันทึกไม่สำเร็จ");
         } catch (err) { 
-            console.log(err)
+            console.error(err)
             setStatusMsg("เกิดข้อผิดพลาด"); }
         setTimeout(() => setStatusMsg(""), 3000);
     };
@@ -194,11 +205,14 @@ export function EditNovelPage() {
                 <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', color:'#3e3e3e' }}>หมวดหมู่</label>
                     <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff' , color:'#000000' }}>
-                        <option value="General">ทั่วไป</option>
-                        <option value="Fantasy">แฟนตาซี</option>
-                        <option value="Romance">รักโรแมนติก</option>
-                        <option value="Action">แอคชั่น</option>
-                        <option value="Horror">สยองขวัญ</option>
+                        {/* 🌟 ลูปหมวดหมู่ */}
+                        {categoriesList.length > 0 ? (
+                            categoriesList.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))
+                        ) : (
+                            <option value="General">กำลังโหลดหมวดหมู่...</option>
+                        )}
                     </select>
                 </div>
 

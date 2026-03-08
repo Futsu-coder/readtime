@@ -1,20 +1,42 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { client, API_URL } from "../client";
 import { RichTextEditor } from "../components/RichtextEditor";
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, Plus, Globe, FileEdit } from 'lucide-react'; 
 
 export function CreateNovel() {
     const navigate = useNavigate();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("General");
+    const [category, setCategory] = useState(""); // ปล่อยว่างไว้ก่อน
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [coverPreview, setCoverPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
     const [statusMsg, setStatusMsg] = useState("");
+
+    // 🌟 State เก็บรายการหมวดหมู่ที่ดึงมาจาก DB
+    const [categoriesList, setCategoriesList] = useState<string[]>([]);
+
+    // 🌟 ดึงหมวดหมู่ตอนเปิดหน้า
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/public/categories`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.categories && data.categories.length > 0) {
+                        setCategoriesList(data.categories);
+                        setCategory(data.categories[0]); // ตั้งค่าเริ่มต้นเป็นอันแรก
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching categories:", err);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -24,19 +46,23 @@ export function CreateNovel() {
         }
     };
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreate = async (saveAsDraft: boolean) => {
         if (!title.trim()) return setErrorMsg("กรุณากรอกชื่อเรื่อง");
-        setIsLoading(true); setStatusMsg("กำลังสร้างนิยาย...");
+        setIsLoading(true); 
+        setStatusMsg(saveAsDraft ? "กำลังบันทึกร่าง..." : "กำลังสร้างนิยาย...");
+        
         try {
             const token = localStorage.getItem('token');
             if (!token) { navigate('/login'); return; }
+            
+            const targetStatus = saveAsDraft ? 'draft' : 'published';
+
             const res = await client.api.protected.novels.$post(
-                { json: { title, description, category } },
+                { json: { title, description, category, status: targetStatus } as any },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
+
             if (res.ok) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const data = await res.json() as any;
                 const newNovelId = data.novel?.id || data.id;
                 if (coverFile && newNovelId) {
@@ -50,8 +76,9 @@ export function CreateNovel() {
                 navigate('/dashborad');
             } else { setIsLoading(false); setErrorMsg("สร้างไม่สำเร็จ"); }
         } catch (err) { 
-            console.log(err)
-            setIsLoading(false); setErrorMsg("Error"); }
+            console.error(err)
+            setIsLoading(false); setErrorMsg("เกิดข้อผิดพลาดในการเชื่อมต่อ"); 
+        }
     };
 
     return (
@@ -61,7 +88,8 @@ export function CreateNovel() {
                     <ChevronLeft size={20} /> ย้อนกลับ
                 </button>
             </div>
-            <form onSubmit={handleCreate} style={mainContent}>
+            
+            <div style={mainContent}>
                 <div style={sectionWhite}>
                     <div style={flexRow}>
                         
@@ -112,10 +140,14 @@ export function CreateNovel() {
                                     onChange={(e) => setCategory(e.target.value)} 
                                     style={{...textInput, appearance: 'auto'}}
                                 >
-                                    <option value="General">ทั่วไป</option>
-                                    <option value="Fantasy">แฟนตาซี</option>
-                                    <option value="Romance">รักโรแมนติก</option>
-                                    <option value="Action">แอคชั่น</option>
+                                    {/* 🌟 ดึงข้อมูลจาก State มาลูป */}
+                                    {categoriesList.length > 0 ? (
+                                        categoriesList.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))
+                                    ) : (
+                                        <option value="General">กำลังโหลดหมวดหมู่...</option>
+                                    )}
                                 </select>
                             </div>
                         </div>
@@ -137,21 +169,35 @@ export function CreateNovel() {
 
                     <div style={statusRowContainer}>
                         <div style={statusWhiteCard}>
-                            <div style={{ flex: 1 }}></div> 
+                            <div style={{ flex: 1, fontSize: '14px', color: '#888' }}>
+                                เลือก "บันทึกเป็นร่าง" ถ้ายังไม่อยากให้ใครเห็นผลงาน
+                            </div> 
                             <div style={actionButtons}>
-                                <button type="button" style={btnGray} onClick={() => navigate(-1)} disabled={isLoading}>ยกเลิก</button>
-                                <button type="submit" style={btnPurple(isLoading)} disabled={isLoading}>
-                                    {isLoading ? (statusMsg || "กำลังสร้าง...") : "สร้างนิยายเลย!"}
+                                <button 
+                                    type="button" 
+                                    style={{...btnOutline, opacity: isLoading ? 0.5 : 1}} 
+                                    onClick={() => handleCreate(true)} 
+                                    disabled={isLoading}
+                                >
+                                    <FileEdit size={18} /> {isLoading && statusMsg.includes("ร่าง") ? "กำลังบันทึก..." : "บันทึกเป็นแบบร่าง"}
+                                </button>
+                                
+                                <button 
+                                    type="button" 
+                                    style={{...btnPurple(isLoading), display: 'flex', alignItems: 'center', gap: '8px'}} 
+                                    onClick={() => handleCreate(false)} 
+                                    disabled={isLoading}
+                                >
+                                    <Globe size={18} /> {isLoading && !statusMsg.includes("ร่าง") ? "กำลังเผยแพร่..." : "เผยแพร่เลย!"}
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     );
 }
-
 
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif", padding: '20px' };
 const headerNav = { maxWidth: '900px', margin: '0 auto 20px auto' };
@@ -167,10 +213,9 @@ const inputArea = { flex: 1, display: 'flex', flexDirection: 'column' as const, 
 const fieldGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
 const purpleLabel = { color: '#bc7df2', fontWeight: 'bold', fontSize: '18px' };
 const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px', color: '#333' };
-
 const errorMessage: React.CSSProperties = { color: '#ff4d4f', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' };
 const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '30px' };
 const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '25px', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' };
-const actionButtons = { display: 'flex', gap: '12px', width: '100%', justifyContent: 'flex-end' };
-const btnGray = { padding: '10px 35px', borderRadius: '15px', border: 'none', backgroundColor: '#666', color: '#fff', cursor: 'pointer', fontWeight: 'bold' };
-const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '10px 35px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });
+const actionButtons = { display: 'flex', gap: '15px', alignItems: 'center' };
+const btnOutline: React.CSSProperties = { padding: '12px 25px', borderRadius: '15px', border: '2px solid #ddd', backgroundColor: '#fff', color: '#666', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' };
+const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '12px 30px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });

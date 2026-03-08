@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, ChevronLeft, GripVertical, Trash2 } from 'lucide-react'; // 🌟 เพิ่ม GripVertical กับ Trash2
+import { Plus, ChevronLeft, GripVertical, Trash2 } from 'lucide-react'; 
 import { API_URL } from "../client";
-
 
 interface PageImage {
     file: File;
@@ -13,13 +12,12 @@ export function CreateMangaChapterPage() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    // --- State สำหรับ API ---
     const [title, setTitle] = useState('');
     const [chapterNumber, setChapterNumber] = useState('');
     const [pages, setPages] = useState<PageImage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     
-    // --- UI Control States ---
+    // 🌟 ค่าเริ่มต้นคือ false = 'แบบร่าง'
     const [isPublished, setIsPublished] = useState(false);
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -27,19 +25,12 @@ export function CreateMangaChapterPage() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // 🌟 Refs สำหรับระบบ Drag & Drop
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
-    // 🌟 ฟังก์ชันจัดการ Drag & Drop
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
         dragItem.current = position;
-        // ทำให้ภาพที่กำลังลากดูโปร่งแสงนิดนึง
-        setTimeout(() => {
-            if (e.target instanceof HTMLElement) {
-                e.target.style.opacity = '0.5';
-            }
-        }, 0);
+        setTimeout(() => { if (e.target instanceof HTMLElement) { e.target.style.opacity = '0.5'; } }, 0);
     };
 
     const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
@@ -47,31 +38,21 @@ export function CreateMangaChapterPage() {
     };
 
     const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
-        if (e.target instanceof HTMLElement) {
-            e.target.style.opacity = '1';
-        }
-
+        if (e.target instanceof HTMLElement) { e.target.style.opacity = '1'; }
         if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
             const _pages = [...pages];
-            // ดึงไอเทมที่ถูกลากออกมา
             const draggedItemContent = _pages.splice(dragItem.current, 1)[0];
-            // แทรกกลับเข้าไปในตำแหน่งใหม่
             _pages.splice(dragOverItem.current, 0, draggedItemContent);
             setPages(_pages);
         }
-        
         dragItem.current = null;
         dragOverItem.current = null;
     };
 
-    // 🌟 ฟังก์ชันเลือกไฟล์ภาพมังงะ
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
-            const newPages = Array.from(files).map(file => ({
-                file,
-                preview: URL.createObjectURL(file)
-            }));
+            const newPages = Array.from(files).map(file => ({ file, preview: URL.createObjectURL(file) }));
             setPages(prev => [...prev, ...newPages]);
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -86,7 +67,6 @@ export function CreateMangaChapterPage() {
         else setIsPublished(false);
     };
 
-    // 🌟 ฟังก์ชันส่งข้อมูลเข้า Backend
     const handleSaveAPI = async () => {
         if (!chapterNumber.trim()) {
             setShowSaveConfirm(false);
@@ -103,7 +83,9 @@ export function CreateMangaChapterPage() {
             formData.append("title", title);
             formData.append("chapterNumber", chapterNumber);
             
-            // ส่งไฟล์ตามลำดับใหม่ที่ถูกจัดเรียงแล้ว
+            // 🌟 แนบค่า status ไปกับ FormData
+            formData.append("status", isPublished ? 'published' : 'draft');
+            
             pages.forEach((page) => formData.append("pages[]", page.file));
 
             const token = localStorage.getItem("token");
@@ -164,11 +146,9 @@ export function CreateMangaChapterPage() {
                     </div>
                 </div>
 
-                {/* 🌟 ส่วนอัปโหลดหน้ามังงะ (แนวตั้ง + Drag & Drop) */}
                 <div style={inputGroup}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                         <span style={labelPurpleText}>จัดเรียงหน้ามังงะ ({pages.length} หน้า)</span>
-                        
                     </div>
 
                     <div style={contentListContainer}>
@@ -189,35 +169,31 @@ export function CreateMangaChapterPage() {
                                 {pages.map((page, index) => (
                                     <div 
                                         key={index} 
-                                        draggable // 🌟 เปิดใช้งานลากวาง
+                                        draggable 
                                         onDragStart={(e) => handleDragStart(e, index)}
                                         onDragEnter={(e) => handleDragEnter(e, index)}
                                         onDragEnd={handleDragEnd}
-                                        onDragOver={(e) => e.preventDefault()} // จำเป็นต้องมีเพื่อให้วางได้
+                                        onDragOver={(e) => e.preventDefault()} 
                                         style={{ 
                                             display: 'flex', alignItems: 'center', gap: '20px', 
                                             background: '#fff', padding: '15px', borderRadius: '15px', 
                                             border: '1px solid #eee', boxShadow: '0 4px 10px rgba(0,0,0,0.03)',
-                                            cursor: 'grab' // เปลี่ยนเมาส์เป็นรูปมือหยิบ
+                                            cursor: 'grab' 
                                         }}
                                     >
-                                        {/* ไอคอนจับลาก */}
                                         <div style={{ cursor: 'grab', color: '#ccc', display: 'flex', alignItems: 'center' }}>
                                             <GripVertical size={24} />
                                         </div>
 
-                                        {/* ข้อมูลลำดับหน้า */}
                                         <div style={{ width: '60px', textAlign: 'center' }}>
                                             <h3 style={{ margin: 0, color: '#ff7b00', fontSize: '1.2rem' }}>{index + 1}</h3>
                                             <span style={{ fontSize: '0.75rem', color: '#999' }}>หน้า</span>
                                         </div>
 
-                                        {/* รูปพรีวิวแนวนอนกว้างๆ */}
                                         <div style={{ flex: 1, height: '500px', background: '#f9f9f9', borderRadius: '10px', overflow: 'hidden', border: '1px solid #f0f0f0' }}>
                                             <img src={page.preview} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt={`page-${index}`} />
                                         </div>
                                         
-                                        {/* ปุ่มลบ */}
                                         <button 
                                             onClick={() => removePage(index)}
                                             style={{ background: '#fff0f300', color: '#ff4d6d', border: 'none', borderRadius: '12px', width: '70px', height: '45px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' }}
@@ -241,7 +217,6 @@ export function CreateMangaChapterPage() {
                     </div>
                 </div>
 
-                {/* 🌟 สถานะและปุ่มบันทึก */}
                 <div style={actionSection}>
                     <div style={statusRowContainer}>
                         <span style={mainStatusLabel}>เผยแพร่ :</span>
@@ -267,7 +242,6 @@ export function CreateMangaChapterPage() {
                 </div>
             </div>
 
-            {/* --- Modals (เหมือนเดิม) --- */}
             {showPublishModal && (
                 <div style={modalOverlay}>
                     <div style={{ ...modalContainer, borderColor: '#ff7b00' }}>
@@ -310,7 +284,6 @@ export function CreateMangaChapterPage() {
     );
 }
 
-// --- Styles ของมังงะ (ธีมสีส้ม) ---
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', padding: '40px 20px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
 const headerNav = { maxWidth: '850px', margin: '0 auto 20px auto' };
 const backBtn = { background: 'none', border: 'none', color: '#ff7b00', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };

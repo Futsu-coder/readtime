@@ -2,159 +2,104 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     ChevronLeft, ShieldAlert, Ban, Search, CheckCircle, MoreVertical, 
-    Trash2, AlertTriangle, FileText, UserX, BookX, History, ListTree, UserCog, X 
+    Trash2, AlertTriangle, FileText, UserX, BookX, History, ListTree, UserCog, X, Image as ImageIcon, Upload
 } from 'lucide-react';
 import { API_URL } from "../client";
 
 // --- Interfaces ---
 interface Report {
-    id: number;
-    reporter_id: number;
-    target_id: number;
+    id: number; reporter_id: number; target_id: number;
     target_type: 'novel' | 'manga' | 'comment' | 'user';
-    reason: string;
-    status: string;
-    created_at: string;
-    reporter_name: string;
-    target_title?: string;
-    novel_chapter_title?: string;
-    manga_chapter_number?: number;
-    comment_text?: string;
-    target_username?: string;
-    target_owner_name?: string;
-    target_owner_id?: number;
-    action_taken?: string;
-    resolved_at?: string;
-    resolver_name?: string;
-    resolver_role?: string;
+    reason: string; status: string; created_at: string;
+    reporter_name: string; target_title?: string;
+    target_owner_name?: string; target_owner_id?: number;
+    comment_text?: string; target_username?: string;
+    action_taken?: string; resolved_at?: string;
+    resolver_name?: string; resolver_role?: string;
 }
 
 interface BannedUser {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-    banned_until: string;
-    ban_reason: string;
+    id: number; username: string; role: string;
+    banned_until: string; ban_reason: string;
 }
 
 interface BannedWork {
-    work_id: number;
-    title: string;
-    work_type: 'novel' | 'manga';
-    owner_name: string;
+    work_id: number; title: string;
+    work_type: 'novel' | 'manga'; owner_name: string;
 }
 
-// 🌟 เพิ่ม Interface สำหรับ Category และ UserList
-interface Category {
-    id: number;
-    name: string;
-}
-
-interface UserListItem {
-    id: number;
-    username: string;
-    author: string;
-    role: string;
-}
+interface Category { id: number; name: string; }
+interface UserListItem { id: number; username: string; author: string; role: string; }
+interface Banner { id: number; image_url: string; created_at: string; }
 
 export function AdminDashboard() {
     const navigate = useNavigate();
     
-    // 🌟 State ควบคุม Sidebar
+    // 🌟 States หลัก
     const [activeTab, setActiveTab] = useState('reports');
-
-    // 🌟 State เก็บสิทธิ์ของผู้ใช้งาน (Role)
     const [adminRole, setAdminRole] = useState<string>('');
-
-    // 🌟 State ข้อมูล
-    const [reports, setReports] = useState<Report[]>([]);
-    const [historyReports, setHistoryReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+
+    // 🌟 States ข้อมูลรายชื่อ
+    const [reports, setReports] = useState<Report[]>([]);
+    const [historyReports, setHistoryReports] = useState<Report[]>([]);
+    const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
+    const [bannedWorks, setBannedWorks] = useState<BannedWork[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [usersList, setUsersList] = useState<UserListItem[]>([]);
+    const [banners, setBanners] = useState<Banner[]>([]);
     
-    // 🌟 State สำหรับ Pop-up จัดการ Report
+    // 🌟 States ค้นหา & ฟอร์ม
+    const [searchUser, setSearchUser] = useState('');
+    const [newCategory, setNewCategory] = useState('');
+    const [editingCategory, setEditingCategory] = useState<number | null>(null);
+    const [editCategoryName, setEditCategoryName] = useState('');
+    
+    // 🌟 States สำหรับอัปโหลด Banner (เพิ่มพรีวิว)
+    const [bannerFiles, setBannerFiles] = useState<FileList | null>(null);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+    const [uploading, setUploading] = useState(false);
+
+    // 🌟 States Pop-ups
     const [actionModalOpen, setActionModalOpen] = useState(false);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [banFormOpen, setBanFormOpen] = useState(false);
     const [banDays, setBanDays] = useState('7');
     const [banReason, setBanReason] = useState('');
-
-    // 🌟 State สำหรับหน้าแบนผู้ใช้
-    const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
-    const [loadingBanned, setLoadingBanned] = useState(false);
+    
     const [manualBanModalOpen, setManualBanModalOpen] = useState(false);
     const [manualBanUsername, setManualBanUsername] = useState(''); 
     const [manualBanDays, setManualBanDays] = useState('7');
     const [manualBanReason, setManualBanReason] = useState('');
 
-    // 🌟 State สำหรับหน้าแบนงานเขียน
-    const [bannedWorks, setBannedWorks] = useState<BannedWork[]>([]);
-    const [loadingBannedWorks, setLoadingBannedWorks] = useState(false);
-
-    // 🌟 State จัดการหมวดหมู่
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [newCategory, setNewCategory] = useState('');
-    const [editingCategory, setEditingCategory] = useState<number | null>(null);
-    const [editCategoryName, setEditCategoryName] = useState('');
-
-    // 🌟 State จัดการสิทธิ์ Admin
-    const [usersList, setUsersList] = useState<UserListItem[]>([]);
-
-    // 🌟 State จัดการสิทธิ์ Admin
-    const [searchUser, setSearchUser] = useState(''); // 🌟 1. เพิ่ม State เก็บคำค้นหา
-
-    // 🌟 2. สร้างตัวกรองข้อมูล (ให้หาจาก ID, ชื่อผู้ใช้ หรือ นามปากกาก็ได้)
-    const filteredUsers = usersList.filter(u => 
-        u.username.toLowerCase().includes(searchUser.toLowerCase()) || 
-        (u.author && u.author.toLowerCase().includes(searchUser.toLowerCase())) ||
-        u.id.toString().includes(searchUser)
-    );
-
-    // --- Effects ---
-    useEffect(() => {
-        const closeMenu = () => setOpenDropdownId(null);
-        document.addEventListener("click", closeMenu);
-        return () => document.removeEventListener("click", closeMenu);
-    }, []);
-
-    // 🌟 ตรวจสอบสิทธิ์ (Role) ของแอดมินที่ล็อกอินอยู่
+    // --- ตรวจสอบสิทธิ์ ---
     useEffect(() => {
         const fetchRole = async () => {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) return;
-
-                const res = await fetch(`${API_URL}/api/admin/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
+                if (!token) { navigate('/login'); return; }
+                const res = await fetch(`${API_URL}/api/admin/me`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (res.ok) {
                     const data = await res.json();
-                    setAdminRole(data.role); 
-                }
-            } catch (err) { 
-                console.error("Error fetching user role", err); 
-            }
+                    setAdminRole(data.role);
+                } else { navigate('/'); }
+            } catch (err) { console.error(err); }
         };
         fetchRole();
-    }, []);
-    
-    // ดึงข้อมูลรายงานรอดำเนินการ
+    }, [navigate]);
+
+    // --- API Fetchers ---
     const fetchReports = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            if (!token) { navigate('/login'); return; }
             const res = await fetch(`${API_URL}/api/admin/reports`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await res.json(); 
-            if (res.ok) setReports(data.reports || []);
-            else setError(data.error || 'ดึงข้อมูลไม่สำเร็จ');
-        } catch (err) { setError('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้'); } finally { setLoading(false); }
+            if (res.ok) { const data = await res.json(); setReports(data.reports || []); }
+        } catch (err) { setError('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); } finally { setLoading(false); }
     };
 
-    // ดึงข้อมูลประวัติรายงาน
     const fetchHistory = async () => {
         setLoading(true);
         try {
@@ -164,27 +109,24 @@ export function AdminDashboard() {
         } catch (err) { console.error(err); } finally { setLoading(false); }
     };
 
-    // ดึงข้อมูลคนติดแบน
     const fetchBannedUsers = async () => {
-        setLoadingBanned(true);
+        setLoading(true);
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/admin/banned-users`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) { const data = await res.json(); setBannedUsers(data.banned_users || []); }
-        } catch (err) { console.error(err); } finally { setLoadingBanned(false); }
+        } catch (err) { console.error(err); } finally { setLoading(false); }
     };
 
-    // ดึงข้อมูลผลงานที่ติดแบน
     const fetchBannedWorks = async () => {
-        setLoadingBannedWorks(true);
+        setLoading(true);
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/admin/banned-works`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) { const data = await res.json(); setBannedWorks(data.banned_works || []); }
-        } catch (err) { console.error(err); } finally { setLoadingBannedWorks(false); }
+        } catch (err) { console.error(err); } finally { setLoading(false); }
     };
 
-    // 🌟 ดึงข้อมูลหมวดหมู่
     const fetchCategories = async () => {
         setLoading(true);
         try {
@@ -194,13 +136,21 @@ export function AdminDashboard() {
         } catch (err) { console.error(err); } finally { setLoading(false); }
     };
 
-    // 🌟 ดึงรายชื่อผู้ใช้ทั้งหมด
     const fetchUsersList = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (res.ok) { const data = await res.json(); setUsersList(data.users || []); }
+        } catch (err) { console.error(err); } finally { setLoading(false); }
+    };
+
+    const fetchBanners = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/banners`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) { const data = await res.json(); setBanners(data.banners || []); }
         } catch (err) { console.error(err); } finally { setLoading(false); }
     };
 
@@ -211,9 +161,108 @@ export function AdminDashboard() {
         else if (activeTab === 'banned_works') fetchBannedWorks();
         else if (activeTab === 'categories') fetchCategories();
         else if (activeTab === 'admins') fetchUsersList();
-    }, [navigate, activeTab]);
+        else if (activeTab === 'banners') fetchBanners();
+    }, [activeTab]);
 
-    // --- Handlers: จัดการ Reports ---
+    // 🌟 Effect สร้าง URL พรีวิวรูปภาพแบนเนอร์
+    useEffect(() => {
+        if (!bannerFiles || bannerFiles.length === 0) {
+            setPreviewUrls([]);
+            return;
+        }
+        const urls = Array.from(bannerFiles).map(file => URL.createObjectURL(file));
+        setPreviewUrls(urls);
+        return () => urls.forEach(url => URL.revokeObjectURL(url));
+    }, [bannerFiles]);
+
+    // --- Banner Handlers ---
+    const handleUploadBanner = async () => {
+        if (!bannerFiles || bannerFiles.length === 0) return alert('เลือกรูปก่อนครับบอส');
+        setUploading(true);
+        const formData = new FormData();
+        
+        for (let i = 0; i < bannerFiles.length; i++) {
+            formData.append('images[]', bannerFiles[i]);
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/banners`, {
+                method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData
+            });
+            if (res.ok) { 
+                alert('อัปโหลดแบนเนอร์สำเร็จ!'); 
+                setBannerFiles(null); 
+                fetchBanners(); 
+            }
+            else { const data = await res.json(); alert(data.error); }
+        } catch (err) { alert('อัปโหลดไม่สำเร็จ'); } finally { setUploading(false); }
+    };
+
+    const handleDeleteBanner = async (id: number) => {
+        if (!window.confirm('🚨 ลบแบนเนอร์นี้ใช่ไหม?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`${API_URL}/api/admin/banners/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            fetchBanners();
+        } catch (err) { console.error(err); }
+    };
+
+    // --- Category Handlers ---
+    const handleAddCategory = async () => {
+        if (!newCategory.trim()) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/categories`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ name: newCategory.trim() })
+            });
+            if (res.ok) { setNewCategory(''); fetchCategories(); }
+        } catch (err) { console.error(err); }
+    };
+
+    const saveEditCategory = async (id: number) => {
+        if (!editCategoryName.trim()) return alert('กรุณากรอกชื่อหมวดหมู่');
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/categories/${id}`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ name: editCategoryName.trim() })
+            });
+            if (res.ok) { setEditingCategory(null); fetchCategories(); } 
+            else { const data = await res.json(); alert(data.error); }
+        } catch (err) { alert('เกิดข้อผิดพลาด'); }
+    };
+
+    const handleDeleteCategory = async (id: number) => {
+        if (!window.confirm('⚠️ ลบหมวดหมู่นี้ทิ้งใช่หรือไม่?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/categories/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) fetchCategories(); else { const data = await res.json(); alert(data.error); }
+        } catch (err) { alert('เกิดข้อผิดพลาด'); }
+    };
+
+    // --- User Filter Logic ---
+    const filteredUsers = usersList.filter(u => 
+        u.username.toLowerCase().includes(searchUser.toLowerCase()) || 
+        (u.author && u.author.toLowerCase().includes(searchUser.toLowerCase())) ||
+        u.id.toString().includes(searchUser)
+    );
+
+    const handleChangeRole = async (userId: number, newRole: string) => {
+        if (!window.confirm(`เปลี่ยนสิทธิ์เป็น ${newRole} ใช่หรือไม่?`)) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`${API_URL}/api/admin/users/${userId}/role`, {
+                method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ role: newRole })
+            });
+            if (res.ok) fetchUsersList();
+        } catch (err) { console.error(err); }
+    };
+
+    // --- Report Handlers ---
     const handleDeleteReport = async (reportId: number) => {
         const confirmDelete = window.confirm("🚨 แน่ใจหรือไม่ว่าต้องการลบรายการนี้ทิ้งถาวร?");
         if (!confirmDelete) return;
@@ -286,7 +335,6 @@ export function AdminDashboard() {
         } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
     };
 
-    // --- Handlers: จัดการคุก (Banned Users) ---
     const handleManualBan = async () => {
         if (!manualBanUsername.trim() || !manualBanReason.trim()) return alert("กรุณากรอกชื่อผู้ใช้และเหตุผลให้ครบ");
         try {
@@ -315,7 +363,6 @@ export function AdminDashboard() {
         } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
     };
 
-    // --- Handlers: จัดการใบเหลือง / ใบแดง งานเขียน ---
     const handleWarnWork = async () => {
         if (!selectedReport) return;
         if (!window.confirm("🟡 ต้องการซ่อนผลงานนี้เพื่อให้เจ้าของนำไปแก้ไข (ใบเหลือง) ใช่หรือไม่?")) return;
@@ -360,56 +407,6 @@ export function AdminDashboard() {
         } catch (err) { alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'); }
     };
 
-    // 🌟 --- Handlers: จัดการหมวดหมู่ ---
-    const handleAddCategory = async () => {
-        if (!newCategory.trim()) return alert('กรุณากรอกชื่อหมวดหมู่');
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/admin/categories`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ name: newCategory.trim() })
-            });
-            if (res.ok) { setNewCategory(''); fetchCategories(); } 
-            else { const data = await res.json(); alert(data.error); }
-        } catch (err) { alert('เกิดข้อผิดพลาด'); }
-    };
-
-    const saveEditCategory = async (id: number) => {
-        if (!editCategoryName.trim()) return alert('กรุณากรอกชื่อหมวดหมู่');
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/admin/categories/${id}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ name: editCategoryName.trim() })
-            });
-            if (res.ok) { setEditingCategory(null); fetchCategories(); } 
-            else { const data = await res.json(); alert(data.error); }
-        } catch (err) { alert('เกิดข้อผิดพลาด'); }
-    };
-
-    const handleDeleteCategory = async (id: number) => {
-        if (!window.confirm('⚠️ ลบหมวดหมู่นี้ทิ้งใช่หรือไม่?')) return;
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/admin/categories/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) fetchCategories(); else { const data = await res.json(); alert(data.error); }
-        } catch (err) { alert('เกิดข้อผิดพลาด'); }
-    };
-
-    // 🌟 --- Handlers: จัดการสิทธิ์ (Admin) ---
-    const handleChangeRole = async (userId: number, newRole: string) => {
-        if (!window.confirm(`แน่ใจหรือไม่ที่จะเปลี่ยนสิทธิ์ผู้ใช้นี้เป็น "${newRole}"?`)) return;
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/admin/users/${userId}/role`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ role: newRole })
-            });
-            if (res.ok) { alert("อัปเดตสิทธิ์สำเร็จ!"); fetchUsersList(); } 
-            else { const data = await res.json(); alert(data.error); }
-        } catch (err) { alert('เกิดข้อผิดพลาด'); }
-    };
-
 
     // --- Render Helpers ---
     const renderTargetInfo = (report: Report) => {
@@ -443,6 +440,17 @@ export function AdminDashboard() {
         }
     };
 
+    const SidebarItem = ({ id, icon: Icon, label }: { id: string, icon: any, label: string }) => {
+        const isActive = activeTab === id;
+        return (
+            <div onClick={() => setActiveTab(id)}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 25px', cursor: 'pointer', transition: '0.2s', backgroundColor: isActive ? '#f3e8ff' : 'transparent', color: isActive ? '#9b67bd' : '#666', borderRight: isActive ? '4px solid #9b67bd' : '4px solid transparent', fontWeight: isActive ? 'bold' : 'normal' }}
+            >
+                <Icon size={20} /><span style={{ fontSize: '15px' }}>{label}</span>
+            </div>
+        );
+    };
+
     if (error) return (
         <div style={{ textAlign: 'center', marginTop: '50px' }}>
             <h2 style={{ color: '#e11d48' }}>❌ เข้าถึงไม่ได้</h2><p style={{ color: '#666' }}>{error}</p>
@@ -450,58 +458,36 @@ export function AdminDashboard() {
         </div>
     );
 
-    const SidebarItem = ({ id, icon: Icon, label }: { id: string, icon: any, label: string }) => {
-        const isActive = activeTab === id;
-        return (
-            <div onClick={() => setActiveTab(id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 25px', cursor: 'pointer', transition: '0.2s', backgroundColor: isActive ? '#f3e8ff' : 'transparent', color: isActive ? '#9b67bd' : '#666', borderRight: isActive ? '4px solid #9b67bd' : '4px solid transparent', fontWeight: isActive ? 'bold' : 'normal' }}
-                onMouseOver={e => !isActive && (e.currentTarget.style.backgroundColor = '#f9f9f9')}
-                onMouseOut={e => !isActive && (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
-                <Icon size={20} /><span style={{ fontSize: '15px' }}>{label}</span>
-            </div>
-        );
-    };
-
     return (
         <div style={layoutWrapper}>
-            {/* 🌟 Sidebar ติดหนึบ */}
+            {/* Sidebar */}
             <div style={sidebarContainer}>
                 <div style={{ padding: '20px 25px', borderBottom: '1px solid #eee', marginBottom: '15px' }}>
-                    <h2 style={{ margin: 0, color: '#333', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}><ShieldAlert size={20} color="#e11d48" /> เมนูผู้ดูแลระบบ</h2>
+                    <h2 style={{ margin: 0, color: '#333', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}><ShieldAlert size={20} color="#e11d48" /> แผงควบคุมแอดมิน</h2>
                 </div>
-
                 <div style={menuGroupTitle}>จัดการงานเขียน</div>
-                <SidebarItem id="reports" icon={FileText} label="รายงานงานเขียน" />
-                <SidebarItem id="banned_users" icon={UserX} label="แบนผู้ใช้" />
-                <SidebarItem id="banned_works" icon={BookX} label="แบนงานเขียน" />
-                <SidebarItem id="history" icon={History} label="ประวัติรายงาน" />
-
-                {/* 🌟 เมนูตั้งค่าระบบ สำหรับ Super Admin */}
+                <SidebarItem id="reports" icon={FileText} label="รายงานแจ้งความ" />
+                <SidebarItem id="banned_users" icon={UserX} label="แบนผู้ใช้งาน" />
+                <SidebarItem id="banned_works" icon={BookX} label="แบนผลงาน" />
+                <SidebarItem id="history" icon={History} label="ประวัติการตัดสิน" />
                 {adminRole === 'super_admin' && (
                     <>
-                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>จัดการหมวดหมู่</div>
+                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>ระบบขั้นสูง</div>
+                        <SidebarItem id="banners" icon={ImageIcon} label="จัดการแบนเนอร์" />
                         <SidebarItem id="categories" icon={ListTree} label="จัดการหมวดหมู่" />
-                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>ตั้งค่าBanner</div>
-                        <SidebarItem id="banner" icon={ListTree} label="จัดการBanner" />
-                        <div style={{ ...menuGroupTitle, marginTop: '20px' }}>จัดการสิทธิ์</div>
-                        <SidebarItem id="admins" icon={UserCog} label="จัดการสิทธิ์(Admin)" />
-                        
-
-
+                        <SidebarItem id="admins" icon={UserCog} label="จัดการสิทธิ์ทีมงาน" />
                     </>
                 )}
-
                 <div style={{ flex: 1 }}></div>
                 <div style={{ padding: '20px', borderTop: '1px solid #eee' }}>
-                    <button onClick={() => navigate('/')} style={{ width: '100%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#fff', border: '1px solid #ddd', borderRadius: '10px', color: '#555', cursor: 'pointer', fontWeight: 'bold' }}><ChevronLeft size={18} /> ออกจากหลังบ้าน</button>
+                    <button onClick={() => navigate('/')} style={btnExit}><ChevronLeft size={18} /> กลับสู่เว็บไซต์</button>
                 </div>
             </div>
 
-            {/* 🌟 Main Content */}
+            {/* Main Content */}
             <div style={mainContent}>
                 
-                {/* 🔴 TAB 1: รายงานงานเขียน */}
+                {/* 🌟 TAB 1: Reports */}
                 {activeTab === 'reports' && (
                     <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
                         <div style={headerSection}><div><h1 style={pageTitle}>รายงานงานเขียน</h1><p style={pageSubtitle}>จัดการคำร้องเรียนจากผู้ใช้งาน</p></div></div>
@@ -524,8 +510,7 @@ export function AdminDashboard() {
                                                                 <button style={btnMoreInfo} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === report.id ? null : report.id); }}><MoreVertical size={20} /></button>
                                                                 {openDropdownId === report.id && (
                                                                     <div style={dropdownMenu}>
-                                                                        <div style={dropdownItemGray} onClick={(e) => { e.stopPropagation(); handleDeleteReport(report.id); }} onMouseOver={e => e.currentTarget.style.backgroundColor = '#f5f5f5'} onMouseOut={e => e.currentTarget.style.backgroundColor = '#fff'}><Trash2 size={16} /> ลบเนื้อรายงาน</div>
-                                                                        <div style={dropdownItemRed} onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setActionModalOpen(true); setOpenDropdownId(null); }} onMouseOver={e => e.currentTarget.style.backgroundColor = '#fff1f0'} onMouseOut={e => e.currentTarget.style.backgroundColor = '#fff'}><Ban size={16} /> ระงับผู้ใช้ / ลบเนื้อหา</div>
+                                                                        <div style={dropdownItemRed} onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setActionModalOpen(true); setOpenDropdownId(null); }}><Ban size={16} /> ระงับผู้ใช้ / ลบเนื้อหา</div>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -552,9 +537,7 @@ export function AdminDashboard() {
                             {historyReports.length > 0 && (
                                 <button 
                                     onClick={handleClearHistory}
-                                    style={{ padding: '12px 20px', background: '#fff1f0', color: '#e11d48', border: '1px solid #ffa39e', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s', boxShadow: '0 4px 10px rgba(225, 29, 72, 0.1)' }}
-                                    onMouseOver={e => e.currentTarget.style.background = '#ffe4e6'}
-                                    onMouseOut={e => e.currentTarget.style.background = '#fff1f0'}
+                                    style={{ padding: '12px 20px', background: '#fff1f0', color: '#e11d48', border: '1px solid #ffa39e', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
                                 >
                                     <Trash2 size={18} /> ล้างประวัติทั้งหมด
                                 </button>
@@ -600,8 +583,7 @@ export function AdminDashboard() {
                                                         <td style={{ ...tdStyle, textAlign: 'center' }}>
                                                             <button 
                                                                 onClick={() => handleDeleteReport(report.id)} 
-                                                                style={{ padding: '8px', background: '#fff1f0', color: '#e11d48', border: '1px solid #ffa39e', borderRadius: '8px', cursor: 'pointer', transition: '0.2s' }}
-                                                                title="ลบประวัตินี้ทิ้ง"
+                                                                style={{ padding: '8px', background: '#fff1f0', color: '#e11d48', border: '1px solid #ffa39e', borderRadius: '8px', cursor: 'pointer' }}
                                                             >
                                                                 <Trash2 size={18} />
                                                             </button>
@@ -624,7 +606,7 @@ export function AdminDashboard() {
                             <div><h1 style={pageTitle}>จัดการแบนผู้ใช้</h1><p style={pageSubtitle}>รายชื่อผู้กระทำผิดที่ถูกระงับการใช้งาน</p></div>
                             <button onClick={() => setManualBanModalOpen(true)} style={{ padding: '12px 25px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(225, 29, 72, 0.3)' }}><Ban size={18} /> สั่งแบนผู้ใช้เพิ่ม</button>
                         </div>
-                        {loadingBanned ? ( <div style={{ textAlign: 'center', padding: '50px', color: '#e11d48' }}>⏳ กำลังโหลดข้อมูลนักโทษ...</div> ) : (
+                        {loading ? ( <div style={{ textAlign: 'center', padding: '50px', color: '#e11d48' }}>⏳ กำลังโหลด...</div> ) : (
                             <div style={contentCard}>
                                 <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px' }}>กำลังติดแบนทั้งหมด ({bannedUsers.length}) บัญชี</h3></div>
                                 <div style={{ overflowX: 'auto' }}>
@@ -656,7 +638,7 @@ export function AdminDashboard() {
                         <div style={headerSection}>
                             <div><h1 style={pageTitle}>จัดการแบนงานเขียน</h1><p style={pageSubtitle}>คลังเก็บผลงานที่ถูกระงับ (ใบแดง 🔴)</p></div>
                         </div>
-                        {loadingBannedWorks ? ( <div style={{ textAlign: 'center', padding: '50px', color: '#e11d48' }}>⏳ กำลังโหลดข้อมูลผลงาน...</div> ) : (
+                        {loading ? ( <div style={{ textAlign: 'center', padding: '50px', color: '#e11d48' }}>⏳ กำลังโหลด...</div> ) : (
                             <div style={contentCard}>
                                 <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px' }}>ผลงานที่ถูกแบนทั้งหมด ({bannedWorks.length}) เรื่อง</h3></div>
                                 <div style={{ overflowX: 'auto' }}>
@@ -681,210 +663,217 @@ export function AdminDashboard() {
                     </div>
                 )}
 
-                {/* 🌟 TAB 5: จัดการหมวดหมู่ (Categories) */}
-                {activeTab === 'categories' && adminRole === 'super_admin' && (
-                    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-                        <div style={headerSection}>
-                            <div><h1 style={pageTitle}>จัดการหมวดหมู่</h1><p style={pageSubtitle}>เพิ่ม ลบ หรือแก้ไขรายชื่อหมวดหมู่ของนิยายและการ์ตูน</p></div>
+                {/* 🌟 TAB 5: Banners (Super Admin Only) พร้อมระบบพรีวิวและคำแนะนำ */}
+                {activeTab === 'banners' && adminRole === 'super_admin' && (
+                    <div style={{ animation: 'fadeIn 0.3s' }}>
+                        <h1 style={pageTitle}>จัดการแบนเนอร์หน้าแรก</h1>
+                        <p style={pageSubtitle}>จัดการรูปภาพเพื่อแสดงผลในสไลด์หน้าโฮมเพจของเว็บไซต์</p>
+                        
+                        {/* 🌟 กล่องคำแนะนำที่เพิ่มเข้ามาใหม่ */}
+                        <div style={{ background: '#e6f7ff', borderLeft: '4px solid #1890ff', padding: '12px 20px', marginBottom: '25px', borderRadius: '0 8px 8px 0', color: '#333', fontSize: '14px' }}>
+                            <strong style={{ color: '#0050b3' }}>📌 คำแนะนำการอัปโหลดแบนเนอร์:</strong>
+                            <ul style={{ margin: '5px 0 0 0', paddingLeft: '20px', color: '#555' }}>
+                                <li><b>ขนาดที่แนะนำ:</b> 1200 x 400 พิกเซล (อัตราส่วน 3:1)</li>
+                                <li><b>ประเภทไฟล์:</b> JPG, PNG, WEBP (ระบบจะปรับรูปให้พอดีกล่องอัตโนมัติ)</li>
+                                <li>สามารถลากคลุมเพื่อเลือกไฟล์ และ <b>อัปโหลดหลายรูปพร้อมกันได้</b></li>
+                            </ul>
                         </div>
 
-                        <div style={{ ...contentCard, padding: '20px', marginBottom: '30px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                            <input type="text" placeholder="พิมพ์ชื่อหมวดหมู่ใหม่ที่นี่..." value={newCategory} onChange={e => setNewCategory(e.target.value)} style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '15px', outline: 'none' }} />
-                            <button onClick={handleAddCategory} style={{ padding: '12px 25px', background: '#9b67bd', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>+ เพิ่มหมวดหมู่</button>
-                        </div>
-
-                        {loading ? ( <div style={{ textAlign: 'center', padding: '50px' }}>⏳ กำลังโหลดข้อมูล...</div> ) : (
-                            <div style={contentCard}>
-                                <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px' }}>รายการหมวดหมู่ทั้งหมด ({categories.length})</h3></div>
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table style={tableStyle}>
-                                        <thead><tr style={tableHeadRow}><th style={{...thStyle, width: '80px'}}>ID</th><th style={thStyle}>ชื่อหมวดหมู่</th><th style={{ ...thStyle, textAlign: 'center', width: '150px' }}>จัดการ</th></tr></thead>
-                                        <tbody>
-                                            {categories.map(cat => (
-                                                <tr key={cat.id} style={tableRowStyle}>
-                                                    <td style={{...tdStyle, color: '#888'}}>#{cat.id}</td>
-                                                    <td style={tdStyle}>
-                                                        {editingCategory === cat.id ? (
-                                                            <input type="text" value={editCategoryName} onChange={e => setEditCategoryName(e.target.value)} style={{ padding: '8px', width: '100%', borderRadius: '5px', border: '1px solid #9b67bd', outline: 'none' }} />
-                                                        ) : ( <strong style={{color: '#333'}}>{cat.name}</strong> )}
-                                                    </td>
-                                                    <td style={{ ...tdStyle, textAlign: 'center' }}>
-                                                        {editingCategory === cat.id ? (
-                                                            <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                                                                <button onClick={() => saveEditCategory(cat.id)} style={{ padding: '6px 12px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>บันทึก</button>
-                                                                <button onClick={() => setEditingCategory(null)} style={{ padding: '6px 12px', background: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer' }}>ยกเลิก</button>
-                                                            </div>
-                                                        ) : (
-                                                            <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                                                                <button onClick={() => { setEditingCategory(cat.id); setEditCategoryName(cat.name); }} style={{ padding: '6px 12px', background: '#f3e8ff', color: '#9b67bd', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>แก้ไข</button>
-                                                                <button onClick={() => handleDeleteCategory(cat.id)} style={{ padding: '6px 12px', background: '#fff1f0', color: '#e11d48', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>ลบ</button>
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                        <div style={{...contentCard, padding: '25px', marginBottom: '30px'}}>
+                            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                <div style={uploadBox}>
+                                    <input 
+                                        type="file" 
+                                        multiple 
+                                        accept="image/*" 
+                                        onChange={e => setBannerFiles(e.target.files)} 
+                                        style={fileInput} 
+                                    />
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                                        <Upload size={20} />
+                                        {bannerFiles && bannerFiles.length > 0 
+                                            ? <span style={{color: '#9b67bd', fontWeight: 'bold'}}>เลือกเตรียมไว้ {bannerFiles.length} รูป</span> 
+                                            : "คลิกหรือลากรูปมาวางตรงนี้ (อัปได้หลายรูปพร้อมกัน)"}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* 🌟 TAB 6: จัดการสิทธิ์ Admin (Role Management) */}
-                {activeTab === 'admins' && adminRole === 'super_admin' && (
-                    <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
-                        <div style={headerSection}>
-                            <div><h1 style={pageTitle}>จัดการสิทธิ์ทีมงาน</h1><p style={pageSubtitle}>แต่งตั้งหรือปลดผู้ดูแลระบบ (Admin)</p></div>
-                        </div>
-
-                        {/* 🌟 ช่องค้นหาผู้ใช้ */}
-                        <div style={{ ...contentCard, padding: '15px 20px', marginBottom: '25px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <Search size={20} color="#888" />
-                            <input 
-                                type="text" 
-                                placeholder="ค้นหาด้วย ID, ชื่อผู้ใช้ หรือนามปากกา..." 
-                                value={searchUser} 
-                                onChange={e => setSearchUser(e.target.value)} 
-                                style={{ flex: 1, padding: '8px', border: 'none', fontSize: '15px', outline: 'none' }} 
-                            />
-                            {searchUser && (
-                                <button onClick={() => setSearchUser('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', display: 'flex', padding: '5px' }}>
-                                    <X size={18} />
+                                <button onClick={handleUploadBanner} disabled={uploading || !bannerFiles} style={{ ...btnPurple, opacity: (!bannerFiles || uploading) ? 0.6 : 1 }}>
+                                    {uploading ? 'กำลังอัปโหลด...' : 'เริ่มอัปโหลด'}
                                 </button>
+                            </div>
+
+                            {/* 🌟 ส่วนแสดง Preview รูปภาพก่อนอัปโหลด */}
+                            {previewUrls.length > 0 && (
+                                <div style={{ marginTop: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '12px', border: '1px dashed #ccc' }}>
+                                    <div style={{ fontSize: '14px', color: '#555', marginBottom: '10px', fontWeight: 'bold' }}>
+                                        👀 พรีวิวรูปที่กำลังจะอัปโหลด ({previewUrls.length} รูป):
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                        {previewUrls.map((url, idx) => (
+                                            <div key={idx} style={{ position: 'relative', width: '180px', height: '60px', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', border: '1px solid #ddd' }}>
+                                                <img src={url} alt={`preview-${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button 
+                                        onClick={() => setBannerFiles(null)} 
+                                        style={{ marginTop: '15px', padding: '6px 15px', fontSize: '13px', background: '#fff1f0', color: '#e11d48', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                                    >
+                                        ยกเลิกการเลือก
+                                    </button>
+                                </div>
                             )}
                         </div>
 
-                        {loading ? ( <div style={{ textAlign: 'center', padding: '50px', color: '#9b67bd' }}>⏳ กำลังโหลดรายชื่อ...</div> ) : (
-                            <div style={contentCard}>
-                                <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px' }}>รายชื่อผู้ใช้งานทั้งหมด ({filteredUsers.length})</h3></div>
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table style={tableStyle}>
-                                        <thead>
-                                            <tr style={tableHeadRow}>
-                                                <th style={{...thStyle, width: '80px'}}>ID</th>
-                                                <th style={thStyle}>ชื่อผู้ใช้ / นามปากกา</th>
-                                                <th style={thStyle}>ระดับสิทธิ์ปัจจุบัน</th>
-                                                <th style={{ ...thStyle, textAlign: 'center', width: '200px' }}>จัดการสิทธิ์</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredUsers.length === 0 ? ( 
-                                                <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#888' }}>{searchUser ? '❌ ไม่พบผู้ใช้งานที่ค้นหา' : 'ไม่พบข้อมูล'}</td></tr> 
-                                            ) : (
-                                                filteredUsers.map(u => (
-                                                    <tr key={u.id} style={tableRowStyle}>
-                                                        <td style={{...tdStyle, color: '#888'}}>#{u.id}</td>
-                                                        <td style={tdStyle}>
-                                                            <div style={{ fontWeight: 'bold', color: '#333' }}>{u.username}</div>
-                                                            <div style={{ fontSize: '13px', color: '#888' }}>{u.author ? `✍️ ${u.author}` : 'ไม่มีนามปากกา'}</div>
-                                                        </td>
-                                                        <td style={tdStyle}>
-                                                            <span style={{ 
-                                                                padding: '6px 12px', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold',
-                                                                background: u.role === 'super_admin' ? '#fff0f6' : u.role === 'admin' ? '#f0f9ff' : '#f5f5f5',
-                                                                color: u.role === 'super_admin' ? '#c41d7f' : u.role === 'admin' ? '#096dd9' : '#555',
-                                                                border: `1px solid ${u.role === 'super_admin' ? '#ffadd2' : u.role === 'admin' ? '#91caff' : '#d9d9d9'}`
-                                                            }}>
-                                                                {u.role === 'super_admin' ? '👑 Super Admin' : u.role === 'admin' ? '🛡️ Admin' : '👤 User'}
-                                                            </span>
-                                                        </td>
-                                                        <td style={{ ...tdStyle, textAlign: 'center' }}>
-                                                            {u.role === 'super_admin' ? (
-                                                                <span style={{ fontSize: '13px', color: '#aaa' }}>ผู้มีอำนาจสูงสุด</span>
-                                                            ) : (
-                                                                <select 
-                                                                    value={u.role} 
-                                                                    onChange={(e) => handleChangeRole(u.id, e.target.value)}
-                                                                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid #ddd', outline: 'none', cursor: 'pointer', background: u.role === 'admin' ? '#e6f7ff' : '#fff', width: '100%' }}
-                                                                >
-                                                                    <option value="user">ปลดเป็น User ธรรมดา</option>
-                                                                    <option value="admin">แต่งตั้งเป็น Admin</option>
-                                                                </select>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
+                        <div style={bannerGrid}>
+                            {banners.map(b => (
+                                <div key={b.id} style={bannerCard}>
+                                    <img src={`${API_URL}${b.image_url}`} style={bannerImg} alt="banner" />
+                                    <button onClick={() => handleDeleteBanner(b.id)} style={btnTrashAbs} title="ลบแบนเนอร์นี้"><Trash2 size={16}/></button>
                                 </div>
-                            </div>
-                        )}
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 🌟 TAB 6: Admins (Search + Role) */}
+                {activeTab === 'admins' && adminRole === 'super_admin' && (
+                    <div style={{ animation: 'fadeIn 0.3s' }}>
+                        <h1 style={pageTitle}>จัดการสิทธิ์ทีมงาน</h1>
+                        <div style={{...contentCard, padding: '15px 20px', marginBottom: '25px', display: 'flex', gap: '10px', alignItems: 'center'}}>
+                            <Search size={20} color="#888" />
+                            <input type="text" placeholder="ค้นหา ID หรือ ชื่อผู้ใช้..." value={searchUser} onChange={e => setSearchUser(e.target.value)} style={searchInput} />
+                        </div>
+                        <div style={contentCard}>
+                            <table style={tableStyle}>
+                                <thead><tr style={tableHeadRow}><th style={thStyle}>ID</th><th style={thStyle}>ชื่อผู้ใช้ / นามปากกา</th><th style={thStyle}>สิทธิ์</th><th style={thStyle}>จัดการ</th></tr></thead>
+                                <tbody>
+                                    {filteredUsers.map(u => (
+                                        <tr key={u.id} style={tableRowStyle}>
+                                            <td style={tdStyle}>#{u.id}</td>
+                                            <td style={tdStyle}><strong>{u.username}</strong><br/><small>{u.author}</small></td>
+                                            <td style={tdStyle}><span style={roleBadge}>{u.role}</span></td>
+                                            <td style={tdStyle}>
+                                                {u.role !== 'super_admin' && (
+                                                    <select value={u.role} onChange={e => handleChangeRole(u.id, e.target.value)} style={selectRole}>
+                                                        <option value="user">User</option>
+                                                        <option value="admin">Admin</option>
+                                                    </select>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* 🌟 TAB 7: Categories */}
+                {activeTab === 'categories' && adminRole === 'super_admin' && (
+                    <div style={{ animation: 'fadeIn 0.3s' }}>
+                        <h1 style={pageTitle}>จัดการหมวดหมู่</h1>
+                        <div style={{...contentCard, padding: '15px 20px', marginBottom: '25px', display: 'flex', gap: '10px'}}>
+                            <input type="text" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="ชื่อหมวดหมู่ใหม่..." style={searchInput} />
+                            <button onClick={handleAddCategory} style={btnPurple}>เพิ่ม</button>
+                        </div>
+                        <div style={contentCard}>
+                            <table style={tableStyle}>
+                                <tbody>
+                                    {categories.map(c => (
+                                        <tr key={c.id} style={tableRowStyle}>
+                                            <td style={tdStyle}>#{c.id}</td>
+                                            <td style={tdStyle}>
+                                                {editingCategory === c.id ? (
+                                                    <input type="text" value={editCategoryName} onChange={e => setEditCategoryName(e.target.value)} style={{ padding: '8px', width: '100%', borderRadius: '5px', border: '1px solid #9b67bd', outline: 'none' }} />
+                                                ) : ( <strong style={{color: '#333'}}>{c.name}</strong> )}
+                                            </td>
+                                            <td style={{...tdStyle, textAlign: 'right'}}>
+                                                {editingCategory === c.id ? (
+                                                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
+                                                        <button onClick={() => saveEditCategory(c.id)} style={{ padding: '6px 12px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>บันทึก</button>
+                                                        <button onClick={() => setEditingCategory(null)} style={{ padding: '6px 12px', background: '#f5f5f5', color: '#666', border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer' }}>ยกเลิก</button>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'flex-end' }}>
+                                                        <button onClick={() => { setEditingCategory(c.id); setEditCategoryName(c.name); }} style={{ padding: '6px 12px', background: '#f3e8ff', color: '#9b67bd', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>แก้ไข</button>
+                                                        <button onClick={() => handleDeleteCategory(c.id)} style={{ padding: '6px 12px', background: '#fff1f0', color: '#e11d48', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>ลบ</button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* 🌟 ---------------- POP-UPS ---------------- 🌟 */}
-
-            {/* 1. Pop-up จัดการ Report */}
             {actionModalOpen && selectedReport && (
                 <div style={modalOverlay}>
                     <div style={modalContent}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
                             <h2 style={{ margin: 0, color: '#333', fontSize: '22px' }}>{banFormOpen ? '🔨 กำหนดบทลงโทษ (แบนบัญชี)' : 'จัดการรายงาน'}</h2>
-                            <button onClick={() => { setActionModalOpen(false); setBanFormOpen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0, display: 'flex' }}><X size={24} /></button>
+                            <button onClick={() => { setActionModalOpen(false); setBanFormOpen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0 }}><X size={24} /></button>
                         </div>
                         
                         <div style={{ marginBottom: '20px', fontSize: '14px', color: '#555', background: '#f9f9f9', padding: '15px', borderRadius: '10px' }}>
-                            <span style={{ fontWeight: 'bold' }}>เป้าหมาย:</span> {selectedReport.target_type === 'novel' ? '📖 นิยาย' : selectedReport.target_type === 'manga' ? '🎨 มังงะ' : '💬 คอมเมนต์ / ผู้ใช้'} (ID: {selectedReport.target_id}) <br/>
+                            <span style={{ fontWeight: 'bold' }}>เป้าหมาย:</span> {selectedReport.target_type} (ID: {selectedReport.target_id}) <br/>
                             <span style={{ fontWeight: 'bold' }}>เจ้าของผลงาน/ผู้กระทำผิด:</span> {selectedReport.target_owner_name || 'ไม่ทราบชื่อ'} (ID: {selectedReport.target_owner_id})
                         </div>
 
                         {banFormOpen ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>ระยะเวลาการแบน:</label><select value={banDays} onChange={e => setBanDays(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc' }}><option value="3">3 วัน (ตักเตือนรุนแรง)</option><option value="7">7 วัน (แบนมาตรฐาน)</option><option value="30">30 วัน (แบน 1 เดือน)</option><option value="365">365 วัน (แบน 1 ปี)</option><option value="36500">แบนถาวร</option></select></div>
-                                <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>เหตุผล (ให้ผู้ใช้เห็นตอนถูกเตะ):</label><input type="text" value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="เช่น ละเมิดกฎกติกา..." style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} /></div>
+                                <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>ระยะเวลาการแบน:</label><select value={banDays} onChange={e => setBanDays(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc' }}><option value="3">3 วัน</option><option value="7">7 วัน</option><option value="30">30 วัน</option><option value="365">365 วัน</option><option value="36500">แบนถาวร</option></select></div>
+                                <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>เหตุผล:</label><input type="text" value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="เช่น ละเมิดกฎกติกา..." style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} /></div>
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                                     <button style={{ padding: '12px 15px', background: '#eee', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', color: '#555' }} onClick={() => setBanFormOpen(false)}>ย้อนกลับ</button>
-                                    <button style={{ flex: 1, padding: '12px', background: '#ffe4e6', color: '#e11d48', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => { setBanFormOpen(false); setActionModalOpen(false); }}>ยกเลิก</button>
                                     <button style={{ flex: 2, padding: '12px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }} onClick={handleBanUserFromReport}>ยืนยันการลงดาบ</button>
                                 </div>
                             </div>
                         ) : (
                             <div style={{ display: 'flex', gap: '15px', flexDirection: 'column' }}>
-                                <div style={actionCardGray} onClick={() => handleRejectReport(selectedReport.id)} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                <div style={actionCardGray} onClick={() => handleRejectReport(selectedReport.id)}>
                                     <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}><CheckCircle size={28} color="#888" /></div>
-                                    <div><h4 style={{ margin: '0 0 5px 0', color: '#555', fontSize: '16px' }}>ปัดตกรายงาน (ไม่มีความผิด)</h4><span style={{ fontSize: '13px', color: '#888' }}>ปิดเคสนี้โดยไม่ต้องลงโทษใครและเก็บลงประวัติ</span></div>
+                                    <div><h4 style={{ margin: '0 0 5px 0', color: '#555', fontSize: '16px' }}>ปัดตกรายงาน</h4><span style={{ fontSize: '13px', color: '#888' }}>ปิดเคสนี้โดยไม่ต้องลงโทษใคร</span></div>
                                 </div>
                                 {['novel', 'manga'].includes(selectedReport.target_type) && (
-                                    <div style={actionCardWarning} onClick={handleWarnWork} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
-                                        <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(212, 107, 8, 0.2)' }}><AlertTriangle size={28} color="#d46b08" /></div>
-                                        <div><h4 style={{ margin: '0 0 5px 0', color: '#d46b08', fontSize: '16px' }}>ตักเตือนผลงาน (ใบเหลือง)</h4><span style={{ fontSize: '13px', color: '#888' }}>ซ่อนเนื้อหาให้เป็น "แบบร่าง" เพื่อให้เจ้าของแก้ไข</span></div>
-                                    </div>
+                                    <>
+                                        <div style={actionCardWarning} onClick={handleWarnWork}>
+                                            <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(212, 107, 8, 0.2)' }}><AlertTriangle size={28} color="#d46b08" /></div>
+                                            <div><h4 style={{ margin: '0 0 5px 0', color: '#d46b08', fontSize: '16px' }}>ตักเตือนผลงาน (ใบเหลือง)</h4><span style={{ fontSize: '13px', color: '#888' }}>ซ่อนเนื้อหาเป็นแบบร่าง</span></div>
+                                        </div>
+                                        <div style={actionCardDanger} onClick={() => handleBanWork(selectedReport.target_id, selectedReport.target_type)}>
+                                            <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(225, 29, 72, 0.2)' }}><BookX size={28} color="#e11d48" /></div>
+                                            <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ระงับผลงานถาวร (ใบแดง)</h4><span style={{ fontSize: '13px', color: '#888' }}>แบนผลงานชิ้นนี้ทันที</span></div>
+                                        </div>
+                                    </>
                                 )}
-                                {['novel', 'manga'].includes(selectedReport.target_type) && (
-                                    <div style={actionCardDanger} onClick={() => handleBanWork(selectedReport.target_id, selectedReport.target_type)} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
-                                        <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(225, 29, 72, 0.2)' }}><BookX size={28} color="#e11d48" /></div>
-                                        <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ระงับผลงานถาวร (ใบแดง)</h4><span style={{ fontSize: '13px', color: '#888' }}>แบนผลงานชิ้นนี้ทันที ล็อกตายไม่ให้เข้าถึงได้อีก</span></div>
-                                    </div>
-                                )}
-                                <div style={actionCardDanger} onClick={() => setBanFormOpen(true)} onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                <div style={actionCardDanger} onClick={() => setBanFormOpen(true)}>
                                     <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(225, 29, 72, 0.2)' }}><UserX size={28} color="#e11d48" /></div>
-                                    <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ลงโทษผู้ใช้งาน (แบนบัญชี)</h4><span style={{ fontSize: '13px', color: '#888' }}>ระงับการใช้งานบัญชีนี้ (User จะเข้าสู่ระบบไม่ได้อีก)</span></div>
+                                    <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ลงโทษผู้ใช้งาน (แบนบัญชี)</h4><span style={{ fontSize: '13px', color: '#888' }}>ระงับการใช้งาน User นี้</span></div>
                                 </div>
-                                <button style={closeBtnStyle} onClick={() => { setActionModalOpen(false); setBanFormOpen(false); }}>ยกเลิก</button>
                             </div>
                         )}
                     </div>
                 </div>
             )}
 
-            {/* 2. Pop-up สั่งแบน Manual */}
             {manualBanModalOpen && (
                 <div style={modalOverlay}>
                     <div style={modalContent}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
                             <h2 style={{ margin: 0, color: '#e11d48', fontSize: '22px', display: 'flex', alignItems: 'center', gap: '10px' }}><Ban size={24} /> สั่งแบนบัญชีผู้ใช้</h2>
-                            <button onClick={() => setManualBanModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0, display: 'flex' }}><X size={24} /></button>
+                            <button onClick={() => setManualBanModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', padding: 0 }}><X size={24} /></button>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
                             <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>ระบุชื่อผู้ใช้เป้าหมาย (Username):</label><input type="text" value={manualBanUsername} onChange={e => setManualBanUsername(e.target.value)} placeholder="เช่น somchai123" style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} /></div>
                             <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>ระยะเวลาการแบน:</label><select value={manualBanDays} onChange={e => setManualBanDays(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc' }}><option value="3">3 วัน</option><option value="7">7 วัน</option><option value="30">30 วัน</option><option value="365">365 วัน</option><option value="36500">แบนถาวร</option></select></div>
-                            <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>เหตุผล (ให้ผู้ใช้เห็นตอนถูกเตะ):</label><input type="text" value={manualBanReason} onChange={e => setManualBanReason(e.target.value)} placeholder="เช่น ก่อกวนผู้อื่น..." style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} /></div>
+                            <div><label style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>เหตุผล:</label><input type="text" value={manualBanReason} onChange={e => setManualBanReason(e.target.value)} placeholder="เช่น ก่อกวนผู้อื่น..." style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} /></div>
                             <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                                 <button style={{ flex: 1, padding: '12px', background: '#eee', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => setManualBanModalOpen(false)}>ยกเลิก</button>
-                                <button style={{ flex: 1, padding: '12px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }} onClick={handleManualBan}>ยืนยันการลงดาบ</button>
+                                <button style={{ flex: 1, padding: '12px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }} onClick={handleManualBan}>ยืนยัน</button>
                             </div>
                         </div>
                     </div>
@@ -894,31 +883,42 @@ export function AdminDashboard() {
     );
 }
 
-// --- Styles ของเดิม ---
-const layoutWrapper: React.CSSProperties = { display: 'flex', minHeight: 'calc(100vh - 75px)', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif", alignItems: 'flex-start' };
-const sidebarContainer: React.CSSProperties = { width: '260px', backgroundColor: '#fff', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column', flexShrink: 0, boxShadow: '2px 0 10px rgba(0,0,0,0.02)', position: 'sticky', top: '75px', height: 'calc(100vh - 75px)', overflowY: 'auto' };
-const menuGroupTitle: React.CSSProperties = { padding: '10px 25px', fontSize: '13px', fontWeight: 'bold', color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.5px' };
+// --- CSS Styles ---
+const layoutWrapper: React.CSSProperties = { display: 'flex', minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', sans-serif" };
+const sidebarContainer: React.CSSProperties = { width: '260px', backgroundColor: '#fff', borderRight: '1px solid #eee', display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' };
+const menuGroupTitle: React.CSSProperties = { padding: '10px 25px', fontSize: '12px', fontWeight: 'bold', color: '#aaa', marginTop: '10px' };
 const mainContent: React.CSSProperties = { flex: 1, padding: '40px', overflowY: 'auto' };
-const headerSection: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' };
-const pageTitle: React.CSSProperties = { margin: 0, color: '#333', fontSize: '28px', fontWeight: 900 };
-const pageSubtitle: React.CSSProperties = { margin: '5px 0 0 0', color: '#666', fontSize: '15px' };
-const contentCard: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '20px', boxShadow: '0 5px 20px rgba(0,0,0,0.03)', border: '1px solid #f0f0f0', overflow: 'hidden' };
-const cardHeader: React.CSSProperties = { padding: '20px 30px', borderBottom: '1px solid #eee', backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', textAlign: 'left' };
-const tableHeadRow: React.CSSProperties = { backgroundColor: '#fdfdfd', borderBottom: '2px solid #eee' };
-const thStyle: React.CSSProperties = { padding: '15px 25px', color: '#888', fontWeight: 'bold', fontSize: '14px', whiteSpace: 'nowrap' };
-const tableRowStyle: React.CSSProperties = { borderBottom: '1px solid #f5f5f5', transition: '0.2s' };
-const tdStyle: React.CSSProperties = { padding: '20px 25px', verticalAlign: 'top', fontSize: '15px' };
+const pageTitle: React.CSSProperties = { margin: 0, fontSize: '28px', fontWeight: 'bold', color: '#333' };
+const pageSubtitle: React.CSSProperties = { margin: '5px 0 25px 0', color: '#777' };
+const contentCard: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '15px', border: '1px solid #eee', overflow: 'hidden' };
+const cardHeader: React.CSSProperties = { padding: '15px 25px', backgroundColor: '#fafafa', borderBottom: '1px solid #eee', fontWeight: 'bold' };
+const tableStyle: React.CSSProperties = { width: '100%', borderCollapse: 'collapse' };
+const tableHeadRow: React.CSSProperties = { borderBottom: '2px solid #eee', textAlign: 'left' };
+const thStyle: React.CSSProperties = { padding: '15px 25px', color: '#888', fontSize: '14px' };
+const tableRowStyle: React.CSSProperties = { borderBottom: '1px solid #f5f5f5' };
+const tdStyle: React.CSSProperties = { padding: '15px 25px', fontSize: '15px' };
+const btnExit: React.CSSProperties = { width: '100%', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#fff', border: '1px solid #ddd', borderRadius: '10px', cursor: 'pointer' };
+const searchInput: React.CSSProperties = { flex: 1, border: 'none', outline: 'none', fontSize: '15px' };
+const btnPurple: React.CSSProperties = { padding: '10px 25px', background: '#9b67bd', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', whiteSpace: 'nowrap' };
+const bannerGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' };
+const bannerCard: React.CSSProperties = { position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid #eee' };
+const bannerImg: React.CSSProperties = { width: '100%', height: '120px', objectFit: 'cover' };
+// 🌟 ปรับปรุงกล่องอัปโหลด ให้ครอบคลุมพื้นที่ทั้งหมด และมี Hover effect นิสๆ
+const uploadBox: React.CSSProperties = { flex: 1, border: '2px dashed #9b67bd', borderRadius: '10px', padding: '15px', position: 'relative', textAlign: 'center', color: '#888', backgroundColor: '#fafafa', cursor: 'pointer' };
+// 🌟 ขยาย input file ให้เต็มพื้นที่กรอบ
+const fileInput: React.CSSProperties = { position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%', zIndex: 10 };
+const roleBadge: React.CSSProperties = { background: '#f0f0f0', padding: '4px 8px', borderRadius: '6px', fontSize: '12px' };
+const selectRole: React.CSSProperties = { padding: '5px', borderRadius: '5px', border: '1px solid #ddd' };
+const btnTrashAbs: React.CSSProperties = { position: 'absolute', top: '10px', right: '10px', padding: '8px', background: '#fff', color: '#e11d48', border: 'none', borderRadius: '50%', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' };
 const statusPending: React.CSSProperties = { backgroundColor: '#fff7e6', color: '#d46b08', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #ffd591' };
 const statusResolved: React.CSSProperties = { backgroundColor: '#f6ffed', color: '#389e0d', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #b7eb8f' };
 const btnMoreInfo: React.CSSProperties = { background: 'transparent', border: 'none', cursor: 'pointer', color: '#888', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: '0.2s' };
 const dropdownMenu: React.CSSProperties = { position: 'absolute', right: '100%', top: '0', marginRight: '10px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 5px 20px rgba(0,0,0,0.15)', border: '1px solid #eee', overflow: 'hidden', zIndex: 50, width: '210px', textAlign: 'left' };
-const dropdownItemGray: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 18px', cursor: 'pointer', fontSize: '14px', color: '#555', transition: '0.2s', backgroundColor: '#fff' };
 const dropdownItemRed: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 18px', cursor: 'pointer', fontSize: '14px', color: '#e11d48', transition: '0.2s', backgroundColor: '#fff', borderTop: '1px solid #eee', fontWeight: 'bold' };
 const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(3px)' };
 const modalContent: React.CSSProperties = { backgroundColor: '#fff', width: '90%', maxWidth: '450px', borderRadius: '25px', padding: '35px', boxShadow: '0 15px 50px rgba(0,0,0,0.2)', border: '1px solid #eee' };
 const actionCardGray: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', backgroundColor: '#f5f5f5', border: '1px solid #e0e0e0', borderRadius: '15px', cursor: 'pointer', transition: '0.2s' };
 const actionCardWarning: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', backgroundColor: '#fff7e6', border: '1px solid #ffd591', borderRadius: '15px', cursor: 'pointer', transition: '0.2s' };
 const actionCardDanger: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', backgroundColor: '#fff1f0', border: '1px solid #ffa39e', borderRadius: '15px', cursor: 'pointer', transition: '0.2s' };
-const closeBtnStyle: React.CSSProperties = { width: '100%', padding: '14px', marginTop: '25px', backgroundColor: '#f5f5f5', color: '#666', border: 'none', borderRadius: '15px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', transition: '0.2s' };
 const badgeStyle: React.CSSProperties = { padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' };
+const headerSection: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' };
