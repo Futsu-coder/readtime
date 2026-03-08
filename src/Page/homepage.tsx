@@ -197,7 +197,7 @@ export function HomePage() {
                         <div style={sectionHeader}>
                             <div style={titleGroup}>
                                 <div style={purpleLine}></div>
-                                <h3 style={sectionTitle}>⏱️ อ่านต่อจากที่ค้างไว้</h3>
+                                <h3 style={sectionTitle}>อ่านต่อ</h3>
                             </div>
                             <Link to="/history" style={{ color: '#9b67bd', fontSize: '14px', textDecoration: 'none', fontWeight: 'bold' }}>ดูทั้งหมด {'>'}</Link>
                         </div>

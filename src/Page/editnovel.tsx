@@ -11,11 +11,14 @@ interface Novel {
     category: string;
     owner_id: number;
     cover_image?: string | null;
+    is_completed?: number; // 🌟 รับค่าสถานะจบ 0 หรือ 1
 }
+
 interface NovelResponse {
     novel: Novel;
     chapters?: Chapter[];
 }
+
 interface Chapter {
     id: number;
     title: string;
@@ -28,6 +31,7 @@ export function EditNovelPage() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState("");
+    const [isCompleted, setIsCompleted] = useState(0); // 🌟 State เก็บสถานะจบเนื้อเรื่อง
     const [chapters, setChapters] = useState<Chapter[]>([]); 
     const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null); 
     const [coverFile, setCoverFile] = useState<File | null>(null); 
@@ -37,7 +41,6 @@ export function EditNovelPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [statusMsg, setStatusMsg] = useState("");
 
-    // 🌟 State สำหรับเก็บรายการหมวดหมู่
     const [categoriesList, setCategoriesList] = useState<string[]>([]);
 
     useEffect(() => {
@@ -46,7 +49,7 @@ export function EditNovelPage() {
                 const token = localStorage.getItem('token');
                 if (!token) { navigate('/login'); return; }
 
-                // 🌟 ดึงหมวดหมู่ทั้งหมดมาก่อน
+                // ดึงหมวดหมู่
                 const catRes = await fetch(`${API_URL}/api/public/categories`);
                 if (catRes.ok) {
                     const catData = await catRes.json();
@@ -64,8 +67,9 @@ export function EditNovelPage() {
                     setTitle(data.novel.title);
                     setDescription(data.novel.description || "");
                     setCategory(data.novel.category || "");
-                    setCurrentCoverUrl(data.novel.cover_image||null); 
+                    setCurrentCoverUrl(data.novel.cover_image || null); 
                     setChapters(data.chapters || []);
+                    setIsCompleted(data.novel.is_completed || 0); // 🌟 โหลดค่าจาก DB
                 } else {
                     alert("ไม่พบข้อมูล");
                     navigate('/dashborad');
@@ -118,7 +122,8 @@ export function EditNovelPage() {
         try {
             const token = localStorage.getItem('token');
             const res = await client.api.protected.novels[":id"].$put(
-                { param: { id: id! }, json: { title, description, category } },
+                // 🌟 ส่งค่า is_completed กลับไปที่ Backend
+                { param: { id: id! }, json: { title, description, category, is_completed: isCompleted } },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (res.ok) setStatusMsg("บันทึกข้อมูลสำเร็จ!");
@@ -163,6 +168,8 @@ export function EditNovelPage() {
                     <button style={{ padding: '8px 15px', border: '1px solid #ddd', background: 'white', borderRadius: '6px', cursor: 'pointer', color:'#000000' }}>กลับ</button>
                 </Link>
             </div>
+
+            {/* ส่วนที่ 1: รูปปก */}
             <div style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px', textAlign: 'center' }}>
                 <h3 style={{ marginTop: 0, color: '#6a4c93', borderBottom: '1px solid #eee', paddingBottom: '15px'  }}>หน้าปกนิยาย</h3>
                 <div 
@@ -196,28 +203,45 @@ export function EditNovelPage() {
                     )}
                 </div>
             </div>
+
+            {/* ส่วนที่ 2: ข้อมูลทั่วไป */}
             <div style={{ background: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px' }}>
                 <h3 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '15px' , color:'#3e3e3e'}}>ข้อมูลทั่วไป</h3>
                 <div style={{ marginBottom: '20px' }}>
                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px' , color:'#3e3e3e'}}>ชื่อเรื่อง</label>
                     <input type="text" value={title} onChange={e => setTitle(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff' , color:'#000000' }} />
                 </div>
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', color:'#3e3e3e' }}>หมวดหมู่</label>
-                    <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff' , color:'#000000' }}>
-                        {/* 🌟 ลูปหมวดหมู่ */}
-                        {categoriesList.length > 0 ? (
-                            categoriesList.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                            ))
-                        ) : (
-                            <option value="General">กำลังโหลดหมวดหมู่...</option>
-                        )}
-                    </select>
+                
+                {/* 🌟 จัดให้ Dropdown ทั้ง 2 อันอยู่ข้างกัน */}
+                <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', color:'#3e3e3e' }}>หมวดหมู่</label>
+                        <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff' , color:'#000000' }}>
+                            {categoriesList.length > 0 ? (
+                                categoriesList.map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))
+                            ) : (
+                                <option value="General">กำลังโหลดหมวดหมู่...</option>
+                            )}
+                        </select>
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '5px', color:'#3e3e3e' }}>สถานะเนื้อเรื่อง</label>
+                        <select 
+                            value={isCompleted} 
+                            onChange={e => setIsCompleted(Number(e.target.value))} 
+                            style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', background: '#fff' , color:'#000000' }}
+                        >
+                            <option value={0}>กำลังแต่ง (Ongoing)</option>
+                            <option value={1}>จบแล้ว (Completed)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div style={{ marginBottom: '80px' }}>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '10px' }}>เรื่องย่อ</label>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '10px', color: '#3e3e3e' }}>เรื่องย่อ</label>
                     <RichTextEditor 
                         value={description} 
                         onChange={setDescription} 
@@ -227,7 +251,7 @@ export function EditNovelPage() {
                 </div>
 
                 <button onClick={handleSaveDetails} style={{ padding: '10px 30px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer' }}>💾 บันทึกการเปลี่ยนแปลง</button>
-                <button onClick={handleDeleteNovel} style={{ border: 'none', background: 'red', cursor: 'pointer', float: 'right' , color:'#3e3e3e', borderRadius: '30px'}}>🗑️ ลบนิยายเรื่องนี้</button>
+                <button onClick={handleDeleteNovel} style={{ border: 'none', background: 'red', cursor: 'pointer', float: 'right' , color:'#fff', borderRadius: '30px', padding: '10px 20px'}}>🗑️ ลบนิยายเรื่องนี้</button>
 
             </div>
 
@@ -246,15 +270,15 @@ export function EditNovelPage() {
                         <div key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', borderBottom: '1px solid #eee', color:'#3e3e3e' }}>
                             <span>EP.{index + 1} - {ch.title}</span>
                             <div>
-                                <Link to={`/novel/${id}/chapters/${ch.id}/edit`} style={{ marginRight: '10px' ,border: 'none', background: 'orange', cursor: 'pointer' , color:'#3e3e3e' , padding: '10px', borderRadius: '6px'}}>แก้ไข</Link>
-                                <button onClick={() => handleDeleteChapter(ch.id)} style={{ border: 'none', background: 'red', cursor: 'pointer' , color:'#3e3e3e'}}> ลบ </button>
+                                <Link to={`/novel/${id}/chapters/${ch.id}/edit`} style={{ marginRight: '10px' ,border: 'none', background: 'orange', cursor: 'pointer' , color:'#3e3e3e' , padding: '10px', borderRadius: '6px', textDecoration: 'none'}}>แก้ไข</Link>
+                                <button onClick={() => handleDeleteChapter(ch.id)} style={{ border: 'none', background: 'red', cursor: 'pointer' , color:'#fff', padding: '10px', borderRadius: '6px'}}> ลบ </button>
                             </div>
                         </div>
                     ))
                 )}
             </div>
 
-            {statusMsg && <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', padding: '15px 30px', background: statusMsg.includes('✅') ? '#28a745' : '#dc3545', color: 'white', borderRadius: '30px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)', zIndex: 1000 }}>{statusMsg}</div>}
+            {statusMsg && <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', padding: '15px 30px', background: statusMsg.includes('✅') || statusMsg.includes('สำเร็จ') ? '#28a745' : '#dc3545', color: 'white', borderRadius: '30px', boxShadow: '0 4px 15px rgba(0,0,0,0.2)', zIndex: 1000 }}>{statusMsg}</div>}
         </div>
     );
 }

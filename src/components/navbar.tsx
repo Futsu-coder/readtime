@@ -183,7 +183,7 @@ export function Navbar() {
                                     <div 
                                         key={`${result.type}-${result.id}`} 
                                         onClick={() => { 
-                                            handleNavigate(`/${result.type === 'novel' ? 'novels' : 'mangas'}/${result.id}`);
+                                            handleNavigate(`/${result.type === 'novel' ? 'novel' : 'manga'}/${result.id}`);
                                             setSearchTerm('');
                                             setShowSearchDropdown(false);
                                         }}
