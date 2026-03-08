@@ -101,10 +101,7 @@ export function Noveldetailpage() {
 
     return (
         <div style={pageWrapper}>
-            <div style={containerStyle}>
-                <button onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>            
+            <div style={containerStyle}>            
                 <div style={headerCard}>
                     <div style={coverBox}>
                         <NovelImage 
@@ -205,7 +202,6 @@ const pageWrapper: React.CSSProperties = {
     padding: '1px 0'
 };
 const containerStyle: React.CSSProperties = { maxWidth: '1000px', margin: '40px auto', padding: '0 30px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
-const backBtn: React.CSSProperties = { border: 'none', background: 'none', color: '#9b67bd', cursor: 'pointer', display: 'flex', alignItems: 'center', marginBottom: '20px', fontWeight: 'bold', fontSize: '15px', padding: 0 };
 const headerCard: React.CSSProperties = { display: 'flex', gap: '40px', backgroundColor: '#fff', padding: '35px', borderRadius: '25px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', marginBottom: '40px', flexWrap: 'wrap', border: '1px solid #f5f5f5' };
 const coverBox: React.CSSProperties = { width: '240px', height: '340px', backgroundColor: '#f9f9f9', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #f0f0f0', overflow: 'hidden', flexShrink: 0, margin: '0 auto' };
 const infoBox: React.CSSProperties = { flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' };

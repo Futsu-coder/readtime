@@ -87,9 +87,6 @@ export function MangaDetailPage() {
     return (
         <div style={pageWrapper}>
             <div style={containerStyle}>
-                <button onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
                 <div style={headerCard}>
                     <div style={coverBox}>
                         <NovelImage 
@@ -193,8 +190,7 @@ const pageWrapper: React.CSSProperties = {
     padding: '1px 0'
 };
 const containerStyle: React.CSSProperties = { maxWidth: '1000px', margin: '40px auto', padding: '0 30px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
-const backBtn: React.CSSProperties = { border: 'none', background: 'none', color: '#9b67bd', cursor: 'pointer', display: 'flex', alignItems: 'center', marginBottom: '20px', fontWeight: 'bold', fontSize: '15px', padding: 0 };
-const headerCard: React.CSSProperties = { display: 'flex', gap: '40px', backgroundColor: '#fff', padding: '35px', borderRadius: '25px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', marginBottom: '40px', flexWrap: 'wrap', border: '1px solid #f0f0f0' };
+const headerCard: React.CSSProperties = { display: 'flex', gap: '40px', backgroundColor: '#fff', padding: '35px', borderRadius: '25px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', marginBottom: '40px', flexWrap: 'wrap', border: '1px solid #f5f5f5' };
 const coverBox: React.CSSProperties = { width: '240px', height: '340px', backgroundColor: '#fff9f2', borderRadius: '15px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #ffe8cc', overflow: 'hidden', flexShrink: 0, margin: '0 auto' };
 const infoBox: React.CSSProperties = { flex: 1, minWidth: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center' };
 const typeTag: React.CSSProperties = { background: '#9b67bd', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'inline-block' };
@@ -204,7 +200,7 @@ const tagGroup: React.CSSProperties = { display: 'flex', gap: '10px', marginBott
 const tag: React.CSSProperties = { backgroundColor: '#fff4e6', padding: '6px 18px', borderRadius: '20px', fontSize: '13px', color: '#9b67bd', fontWeight: 'bold' };
 const descText: React.CSSProperties = { lineHeight: '1.7', color: '#555', marginBottom: '30px', fontSize: '15px', backgroundColor: '#fafafa', padding: '20px', borderRadius: '12px' , border: '1px solid #eee'};
 const statsRow: React.CSSProperties = { display: 'flex', gap: '25px', color: '#aaa', fontSize: '15px', marginTop: 'auto' };
-const listSection: React.CSSProperties = { backgroundColor: '#fffbf5', padding: '35px', borderRadius: '25px', border: '1px solid #fff4e6', marginBottom: '50px' };
+const listSection: React.CSSProperties = { backgroundColor: '#fffbf5', padding: '35px', borderRadius: '25px', border: '1px solid #f5f5f5', marginBottom: '50px' };
 const sectionTitle: React.CSSProperties = { margin: '0 0 25px 0', color: '#333', fontSize: '22px' };
 const episodeItem: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 25px', backgroundColor: '#fff', borderRadius: '15px', marginBottom: '12px', cursor: 'pointer', border: '1px solid #f0f0f0', transition: '0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' };
 const epTitle: React.CSSProperties = { fontWeight: '600', color: '#444', fontSize: '16px' };

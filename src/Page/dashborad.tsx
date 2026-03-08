@@ -14,7 +14,6 @@ export function MyDashborad() {
     const typeDropdownRef = useRef<HTMLDivElement>(null);
     const manageDropdownRef = useRef<HTMLDivElement>(null);
     const [deleteTarget, setDeleteTarget] = useState<{id: number, title: string, type: 'novel' | 'manga'} | null>(null);
-    // เพิ่ม state สำหรับจัดการป็อปอัพสำเร็จ
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
@@ -57,13 +56,11 @@ export function MyDashborad() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // ฟังก์ชันจัดการตอนคลิกปุ่มถังขยะ (แค่เปิด Modal)
     const handleDelete = (id: number, title: string, type: 'novel' | 'manga', e: React.MouseEvent) => {
         e.stopPropagation();
         setDeleteTarget({ id, title, type });
     };
 
-    // ฟังก์ชันจัดการลบข้อมูลผ่าน API จริงๆ
     const performDelete = async (target: {id: number, title: string, type: 'novel' | 'manga'}) => {
         try {
             const token = localStorage.getItem('token');
@@ -76,7 +73,6 @@ export function MyDashborad() {
 
             if (res.ok) {
                 setWorks(prev => prev.filter(work => !(work.id === target.id && work.type === target.type)));
-                // เปลี่ยน alert("ลบผลงานเรียบร้อยแล้ว"); เป็นการเปิดป็อปอัพสำเร็จ
                 setShowSuccessModal(true);
             } else {
                 const data = await res.json() as any;
@@ -96,7 +92,7 @@ export function MyDashborad() {
     };
 
     if (loading) return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#ffffff', color: '#9b67bd', fontSize: '1.2rem', fontFamily: "'Kanit', sans-serif" }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#ffffff', color: '#9b67bd', fontSize: '1.5rem', fontFamily: "'Kanit', sans-serif" }}>
             กำลังโหลดข้อมูลงานเขียน...
         </div>
     );
@@ -110,11 +106,11 @@ export function MyDashborad() {
             paddingBottom: '80px' 
         }}>
             <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 30px' }}>
-                <h2 style={{ fontSize: '38px', color: '#9b67bd', fontWeight: 'bold', marginBottom: '40px' }}>Writing ✎</h2>
+                <h2 style={{ fontSize: '42px', color: '#9b67bd', fontWeight: 'bold', marginBottom: '40px' }}>My Writing ✎</h2>
 
                 <div style={{ backgroundColor: '#fff', borderRadius: '25px', padding: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', border: '1px solid #f0f0f0' }}>
                     <div style={{ borderBottom: '1px solid #eee', marginBottom: '25px', paddingBottom: '10px' }}>
-                        <h3 style={{ fontSize: '22px', margin: 0, color: '#333' }}>จัดการงานเขียน</h3>
+                        <h3 style={{ fontSize: '26px', margin: 0, color: '#333' }}>จัดการงานเขียน</h3>
                     </div>
 
                     <div style={{ backgroundColor: '#fafafa', borderRadius: '20px', padding: '25px', border: '1px solid #f5f5f5' }}>     
@@ -122,19 +118,19 @@ export function MyDashborad() {
                             <div style={{ position: 'relative' }} ref={manageDropdownRef}>
                                 <button 
                                     onClick={() => setShowManageDropdown(!showManageDropdown)}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 25px', border: '1px solid #eee', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', color: showManageDropdown ? '#9b67bd' : '#333', transition: '0.2s' }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 25px', border: '1px solid #eee', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', color: showManageDropdown ? '#9b67bd' : '#333', transition: '0.2s' }}
                                 >
-                                    {getFilterText()} {showManageDropdown ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                    {getFilterText()} {showManageDropdown ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                                 </button>
                                 {showManageDropdown && (
                                     <div style={{ position: 'absolute', top: '110%', left: 0, width: '180px', backgroundColor: '#fff', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', borderRadius: '12px', zIndex: 20, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
-                                        <div onClick={() => { setActiveFilter('all'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'all' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'all' ? 'bold' : 'normal' }}>ทั้งหมด</div>
-                                        <div onClick={() => { setActiveFilter('novel'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'novel' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'novel' ? 'bold' : 'normal' }}>นิยาย</div>
-                                        <div onClick={() => { setActiveFilter('manga'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '15px', color: activeFilter === 'manga' ? '#9b67bd' : '#555', cursor: 'pointer', fontWeight: activeFilter === 'manga' ? 'bold' : 'normal' }}>มังงะ</div>
+                                        <div onClick={() => { setActiveFilter('all'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '18px', color: activeFilter === 'all' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'all' ? 'bold' : 'normal' }}>ทั้งหมด</div>
+                                        <div onClick={() => { setActiveFilter('novel'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '18px', color: activeFilter === 'novel' ? '#9b67bd' : '#555', cursor: 'pointer', borderBottom: '1px solid #f9f9f9', fontWeight: activeFilter === 'novel' ? 'bold' : 'normal' }}>นิยาย</div>
+                                        <div onClick={() => { setActiveFilter('manga'); setShowManageDropdown(false); }} style={{ padding: '15px 20px', fontSize: '18px', color: activeFilter === 'manga' ? '#9b67bd' : '#555', cursor: 'pointer', fontWeight: activeFilter === 'manga' ? 'bold' : 'normal' }}>มังงะ</div>
                                     </div>
                                 )}
                             </div>
-                            <span style={{ fontSize: '15px', color: '#777', fontWeight: '600' }}>ทั้งหมด ( {displayWorks.length} ) เรื่อง</span>
+                            <span style={{ fontSize: '18px', color: '#777', fontWeight: '600' }}>ทั้งหมด ( {displayWorks.length} ) เรื่อง</span>
                         </div>
 
                         {displayWorks.length > 0 ? displayWorks.map((work) => (
@@ -147,15 +143,15 @@ export function MyDashborad() {
                             >
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                     <div style={{ 
-                                        width: '55px', height: '75px', borderRadius: '8px', marginRight: '20px', 
+                                        width: '65px', height: '90px', borderRadius: '8px', marginRight: '20px', 
                                         backgroundImage: work.cover_image ? `url(${API_URL}${work.cover_image})` : 'none',
                                         backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#f0f0f0', flexShrink: 0
                                     }}>
-                                        {!work.cover_image && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#aaa' }}>No Cover</div>}
+                                        {!work.cover_image && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#aaa' }}>No Cover</div>}
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>{work.title}</span>
-                                        <span style={{ fontSize: '13px', color: '#888' }}>
+                                        <span style={{ fontSize: '22px', fontWeight: '600', color: '#333', marginBottom: '6px' }}>{work.title}</span>
+                                        <span style={{ fontSize: '16px', color: '#888' }}>
                                             <span style={{ color: '#9b67bd', fontWeight: 'bold', marginRight: '10px' }}>
                                                 {work.type === 'novel' ? ' นิยาย' : ' มังงะ'}
                                             </span>
@@ -165,22 +161,22 @@ export function MyDashborad() {
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
-                                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#4caf50', background: '#e8f5e9', padding: '4px 12px', borderRadius: '20px' }}>
+                                    <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#4caf50', background: '#e8f5e9', padding: '6px 16px', borderRadius: '20px' }}>
                                         เผยแพร่แล้ว
                                     </span>
                                     <button 
                                         onClick={(e) => handleDelete(work.id, work.title, work.type, e)} 
-                                        style={{ background: '#fff5f5', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '8px', transition: '0.2s' }}
+                                        style={{ background: '#fff5f5', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '10px', borderRadius: '8px', transition: '0.2s' }}
                                         onMouseOver={e => e.currentTarget.style.background = '#ffe5e5'}
                                         onMouseOut={e => e.currentTarget.style.background = '#fff5f5'}
                                         title="ลบผลงาน"
                                     >
-                                        <Trash2 size={20} color="#ff4d4f" />
+                                        <Trash2 size={24} color="#ff4d4f" />
                                     </button>
                                 </div>
                             </div>
                         )) : (
-                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px', backgroundColor: '#fff', borderRadius: '15px', color: '#888', fontSize: '16px', border: '1px dashed #ccc' }}>
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '150px', backgroundColor: '#fff', borderRadius: '15px', color: '#888', fontSize: '18px', border: '1px dashed #ccc' }}>
                                 ไม่มีผลงานในหมวดหมู่นี้
                             </div>
                         )}
@@ -189,28 +185,28 @@ export function MyDashborad() {
 
                 <div style={{ textAlign: 'center', marginTop: '60px', position: 'relative' }}>
                     {showTypeDropdown && (
-                        <div ref={typeDropdownRef} style={{ position: 'absolute', bottom: '110px', left: '50%', transform: 'translateX(-50%)', width: '420px', backgroundColor: '#fff', padding: '35px', borderRadius: '35px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', zIndex: 100, border: '1px solid #f0f0f0' }}>
-                            <h3 style={{ marginBottom: '25px', fontSize: '22px', color: '#333' }}>เลือกประเภทงานเขียน</h3>
+                        <div ref={typeDropdownRef} style={{ position: 'absolute', bottom: '110px', left: '50%', transform: 'translateX(-50%)', width: '450px', backgroundColor: '#fff', padding: '35px', borderRadius: '35px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', zIndex: 100, border: '1px solid #f0f0f0' }}>
+                            <h3 style={{ marginBottom: '25px', fontSize: '26px', color: '#333' }}>เลือกประเภทงานเขียน</h3>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
                                 <div 
                                     onClick={() => setSelectedType('novel')} 
                                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px 15px', border: '2px solid', borderRadius: '20px', cursor: 'pointer', gap: '12px', transition: '0.2s', borderColor: selectedType === 'novel' ? '#9b67bd' : '#eee', backgroundColor: selectedType === 'novel' ? '#fcf8ff' : '#fff' }}
                                 >
-                                    <Book color={selectedType === 'novel' ? '#9b67bd' : '#aaa'} size={36} /> 
-                                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: selectedType === 'novel' ? '#9b67bd' : '#666' }}>นิยาย</span>
+                                    <Book color={selectedType === 'novel' ? '#9b67bd' : '#aaa'} size={40} /> 
+                                    <span style={{ fontSize: '20px', fontWeight: 'bold', color: selectedType === 'novel' ? '#9b67bd' : '#666' }}>นิยาย</span>
                                 </div>
                                 <div 
                                     onClick={() => setSelectedType('manga')} 
                                     style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '25px 15px', border: '2px solid', borderRadius: '20px', cursor: 'pointer', gap: '12px', transition: '0.2s', borderColor: selectedType === 'manga' ? '#9b67bd' : '#eee', backgroundColor: selectedType === 'manga' ? '#fcf8ff' : '#fff' }}
                                 >
-                                    <ImageIcon color={selectedType === 'manga' ? '#9b67bd' : '#aaa'} size={36} /> 
-                                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: selectedType === 'manga' ? '#9b67bd' : '#666' }}>มังงะ</span>
+                                    <ImageIcon color={selectedType === 'manga' ? '#9b67bd' : '#aaa'} size={40} /> 
+                                    <span style={{ fontSize: '20px', fontWeight: 'bold', color: selectedType === 'manga' ? '#9b67bd' : '#666' }}>มังงะ</span>
                                 </div>
                             </div>
                             <button 
                                 disabled={!selectedType} 
                                 onClick={() => { if (selectedType === 'novel') navigate('/createnovel'); else navigate('/createmanga'); }} 
-                                style={{ width: '100%', padding: '16px', borderRadius: '30px', border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '18px', cursor: selectedType ? 'pointer' : 'not-allowed', backgroundColor: selectedType ? '#9b67bd' : '#ccc', transition: '0.2s' }}
+                                style={{ width: '100%', padding: '18px', borderRadius: '30px', border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '20px', cursor: selectedType ? 'pointer' : 'not-allowed', backgroundColor: selectedType ? '#9b67bd' : '#ccc', transition: '0.2s' }}
                             >
                                 ยืนยัน
                             </button>
@@ -218,7 +214,7 @@ export function MyDashborad() {
                     )}     
                     <button 
                         onClick={() => setShowTypeDropdown(!showTypeDropdown)} 
-                        style={{ backgroundColor: '#bc7df2', color: '#fff', border: 'none', padding: '18px 60px', borderRadius: '50px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 8px 25px rgba(188, 125, 242, 0.4)', transition: '0.2s' }}
+                        style={{ backgroundColor: '#bc7df2', color: '#fff', border: 'none', padding: '20px 65px', borderRadius: '50px', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 8px 25px rgba(188, 125, 242, 0.4)', transition: '0.2s' }}
                         onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                         onMouseOut={e => e.currentTarget.style.transform = 'translateY(0)'}
                     >
@@ -228,18 +224,18 @@ export function MyDashborad() {
                     {/* ส่วนของ Modal ยืนยันการลบที่เพิ่มเข้ามา */}
                     {deleteTarget && (
                         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                            <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '20px', width: '400px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-                                <h3 style={{ color: '#333', marginBottom: '15px' }}>ยืนยันการลบ</h3>
-                                <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.5' }}>
+                            <div style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '20px', width: '450px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                                <h3 style={{ color: '#333', marginBottom: '15px', fontSize: '24px' }}>ยืนยันการลบ</h3>
+                                <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.6', fontSize: '18px' }}>
                                     แน่ใจไหมว่าจะลบ {deleteTarget.type === 'manga' ? 'มังงะ' : 'นิยาย'} เรื่อง <br/>
                                     <span style={{ fontWeight: 'bold', color: '#9b67bd' }}>"{deleteTarget.title}"</span> ?
                                     <br/>
-                                    <span style={{ fontSize: '13px', color: '#ff4d4f' }}>(การลบจะไม่สามารถกู้คืนได้)</span>
+                                    <span style={{ fontSize: '15px', color: '#ff4d4f' }}>(การลบจะไม่สามารถกู้คืนได้)</span>
                                 </p>
                                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
                                     <button 
                                         onClick={() => setDeleteTarget(null)} 
-                                        style={{ padding: '10px 25px', borderRadius: '12px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#555', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s' }}
+                                        style={{ padding: '12px 30px', borderRadius: '12px', border: '1px solid #ddd', backgroundColor: '#fff', color: '#555', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px', transition: '0.2s' }}
                                         onMouseOver={e => e.currentTarget.style.backgroundColor = '#f5f5f5'}
                                         onMouseOut={e => e.currentTarget.style.backgroundColor = '#fff'}
                                     >
@@ -247,7 +243,7 @@ export function MyDashborad() {
                                     </button>
                                     <button 
                                         onClick={() => { performDelete(deleteTarget); setDeleteTarget(null); }} 
-                                        style={{ padding: '10px 25px', borderRadius: '12px', backgroundColor: '#ff4d4f', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s', boxShadow: '0 4px 10px rgba(255, 77, 79, 0.3)' }}
+                                        style={{ padding: '12px 30px', borderRadius: '12px', backgroundColor: '#ff4d4f', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px', transition: '0.2s', boxShadow: '0 4px 10px rgba(255, 77, 79, 0.3)' }}
                                         onMouseOver={e => e.currentTarget.style.backgroundColor = '#ff7875'}
                                         onMouseOut={e => e.currentTarget.style.backgroundColor = '#ff4d4f'}
                                     >
@@ -261,26 +257,27 @@ export function MyDashborad() {
                     {/* --- เพิ่มส่วนของ Modal แจ้งเตือนสำเร็จ --- */}
                     {showSuccessModal && (
                         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                            <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '20px', width: '350px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-                                <h3 style={{ color: '#333', marginBottom: '15px' }}>แจ้งเตือน</h3>
-                                <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.5' }}>
+                            <div style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '20px', width: '400px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                                <h3 style={{ color: '#333', marginBottom: '15px', fontSize: '24px' }}>แจ้งเตือน</h3>
+                                <p style={{ color: '#666', marginBottom: '25px', lineHeight: '1.5', fontSize: '18px' }}>
                                     ลบผลงานเรียบร้อยแล้ว
                                 </p>
                                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                                     <button 
                                         onClick={() => setShowSuccessModal(false)} 
                                         style={{ 
-                                            padding: '10px 25px', 
+                                            padding: '12px 35px', 
                                             borderRadius: '12px', 
-                                            backgroundColor: '#bc7df2', // ใช้สีประจำธีมม่วง
+                                            backgroundColor: '#bc7df2',
                                             color: '#fff', 
                                             border: 'none', 
                                             cursor: 'pointer', 
                                             fontWeight: 'bold', 
+                                            fontSize: '18px',
                                             transition: '0.2s', 
                                             boxShadow: '0 4px 10px rgba(188, 125, 242, 0.3)' 
                                         }}
-                                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#d09eff'} // Slight lighter hover
+                                        onMouseOver={e => e.currentTarget.style.backgroundColor = '#d09eff'} 
                                         onMouseOut={e => e.currentTarget.style.backgroundColor = '#bc7df2'}
                                     >
                                         ตกลง

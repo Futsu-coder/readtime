@@ -22,7 +22,7 @@ export function CommentSection({ workType, workId, chapterId }: CommentSectionPr
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isLoggedIn = !!localStorage.getItem("token");
 
-    const themeColor = workType === "novel" ? "#6a4c93" : "#ff7b00";
+    const themeColor = workType === "novel" ? "#6a4c93" : "#c98bf2";
     const apiPublicPath = workType === "novel" ? "novel" : "manga";
     const apiProtectedPath = workType === "novel" ? "novel" : "manga";
 

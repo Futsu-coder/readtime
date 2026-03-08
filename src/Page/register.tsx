@@ -106,7 +106,8 @@ export function Register() {
         background: 'transparent',
         fontSize: '16px',
         outline: 'none',
-        padding: '5px 0'
+        padding: '5px 0',
+        color: '#333'
     }
 
     const registerButtonStyle = {
