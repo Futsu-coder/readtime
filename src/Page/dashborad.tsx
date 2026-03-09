@@ -11,6 +11,9 @@ export function MyDashborad() {
     const [selectedType, setSelectedType] = useState<'novel' | 'manga' | null>(null);
     const [showManageDropdown, setShowManageDropdown] = useState(false);
     const [activeFilter, setActiveFilter] = useState<'all' | 'novel' | 'manga'>('all'); 
+    
+    const [openStatusDropdownId, setOpenStatusDropdownId] = useState<string | null>(null);
+
     const typeDropdownRef = useRef<HTMLDivElement>(null);
     const manageDropdownRef = useRef<HTMLDivElement>(null);
     const [deleteTarget, setDeleteTarget] = useState<{id: number, title: string, type: 'novel' | 'manga'} | null>(null);
@@ -37,7 +40,12 @@ export function MyDashborad() {
                     combined = [...combined, ...(data.mangas || []).map((m: any) => ({ ...m, type: 'manga' }))];
                 }
                 
-                setWorks(combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+                const formattedWorks = combined.map(w => ({
+                    ...w,
+                    status: w.status || 'published' 
+                }));
+
+                setWorks(formattedWorks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
             } catch (err) {
                 console.error(err);
             } finally {
@@ -49,8 +57,14 @@ export function MyDashborad() {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) setShowTypeDropdown(false);
-            if (manageDropdownRef.current && !manageDropdownRef.current.contains(event.target as Node)) setShowManageDropdown(false);
+            const target = event.target as Element;
+            
+            if (typeDropdownRef.current && !typeDropdownRef.current.contains(target)) setShowTypeDropdown(false);
+            if (manageDropdownRef.current && !manageDropdownRef.current.contains(target)) setShowManageDropdown(false);
+            
+            if (!target.closest('.status-dropdown-zone')) {
+                setOpenStatusDropdownId(null); 
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -84,7 +98,42 @@ export function MyDashborad() {
         }
     };
 
+    const handleStatusChange = async (id: number, type: 'novel' | 'manga', newStatus: 'published' | 'draft', e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation(); 
+        
+        try {
+            const token = localStorage.getItem('token');
+            const url = type === 'novel' 
+                ? `${API_URL}/api/protected/novels/${id}/status` 
+                : `${API_URL}/api/protected/manga/${id}/status`;
+
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (res.ok) {
+                setWorks(prev => prev.map(w => 
+                    (w.id === id && w.type === type) ? { ...w, status: newStatus } : w
+                ));
+                setOpenStatusDropdownId(null); 
+            } else {
+                const data = await res.json() as any;
+                alert(data.error || 'เปลี่ยนสถานะไม่สำเร็จ');
+            }
+        } catch (err) {
+            console.error(err);
+            alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+        }
+    };
+
     const displayWorks = works.filter(w => activeFilter === 'all' ? true : w.type === activeFilter);
+    
     const getFilterText = () => {
         if (activeFilter === 'novel') return 'นิยาย';
         if (activeFilter === 'manga') return 'มังงะ';
@@ -112,10 +161,105 @@ export function MyDashborad() {
                     <div style={{ borderBottom: '1px solid #eee', marginBottom: '25px', paddingBottom: '10px' }}>
                         <h3 style={{ fontSize: '26px', margin: 0, color: '#333' }}>จัดการงานเขียน</h3>
                     </div>
+                    
+                    {displayWorks.length > 0 ? displayWorks.map((work) => {
+                        const uniqueId = `${work.type}-${work.id}`;
+                        const isDraft = work.status === 'draft';
+                        const isBanned = work.status === 'banned'; 
 
-                    <div style={{ backgroundColor: '#fafafa', borderRadius: '20px', padding: '25px', border: '1px solid #f5f5f5' }}>     
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', alignItems: 'center' }}>
-                            <div style={{ position: 'relative' }} ref={manageDropdownRef}>
+                        return (
+                        <div 
+                            key={uniqueId} 
+                            // 🌟 แก้ไข: ถ้าระงับอยู่ ให้ขวางไม่ให้เข้าไปหน้า Edit
+                            onClick={() => {
+                                if (isBanned) {
+                                    alert('ผลงานนี้ถูกระงับ ไม่สามารถเข้าแก้ไขได้');
+                                    return;
+                                }
+                                navigate(`/${work.type}/${work.id}/edit`);
+                            }} 
+                            style={{ 
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: '15px 20px', borderRadius: '15px', marginBottom: '15px', 
+                                cursor: isBanned ? 'not-allowed' : 'pointer', // 🌟 เปลี่ยน cursor เป็น 🚫 ถ้าโดนแบน
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.02)', border: '1px solid transparent', transition: '0.2s', 
+                                opacity: isBanned ? 0.6 : isDraft ? 0.75 : 1 
+                            }}
+                            onMouseOver={e => e.currentTarget.style.borderColor = isBanned ? '#ffa39e' : '#e0c3fc'}
+                            onMouseOut={e => e.currentTarget.style.borderColor = 'transparent'}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{ 
+                                    width: '55px', height: '75px', borderRadius: '8px', marginRight: '20px', 
+                                    backgroundImage: work.cover_image ? `url(${API_URL}${work.cover_image})` : 'none',
+                                    backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#eee', flexShrink: 0,
+                                    filter: isBanned ? 'grayscale(100%)' : isDraft ? 'grayscale(50%)' : 'none'
+                                }}>
+                                    {!work.cover_image && <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#aaa' }}>No Cover</div>}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
+                                        {work.title} 
+                                        {isDraft && <span style={{fontSize: '12px', marginLeft:'8px', color: '#888', fontWeight: 'normal'}}>(ฉบับร่าง)</span>}
+                                        {isBanned && <span style={{fontSize: '12px', marginLeft:'8px', color: '#e11d48', fontWeight: 'bold'}}>(ถูกระงับ)</span>}
+                                    </span>
+                                    <span style={{ fontSize: '13px', color: '#888' }}>
+                                        <span style={{ color: work.type === 'novel' ? '#9b67bd' : '#9b67bd', fontWeight: 'bold', marginRight: '10px' }}>
+                                            {work.type === 'novel' ? ' นิยาย' : ' มังงะ'}
+                                        </span>
+                                        สร้างเมื่อ {new Date(work.created_at).toLocaleDateString('th-TH')}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '25px', alignItems: 'center' }}>
+                                
+                                {/* 🌟 จัดการเงื่อนไข: ถ้าแบนให้โชว์ป้ายแดง ถ้าไม่แบนโชว์ Dropdown */}
+                                {isBanned ? (
+                                    <span style={{ 
+                                        display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold', 
+                                        color: '#e11d48', background: '#fff1f0', border: '1px solid #ffa39e', 
+                                        padding: '6px 12px', borderRadius: '20px', cursor: 'not-allowed'
+                                    }}>
+                                        🚨 ผลงานนี้ถูกแบน
+                                    </span>
+                                ) : (
+                                    <div style={{ position: 'relative' }} className="status-dropdown-zone">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation(); 
+                                                setOpenStatusDropdownId(openStatusDropdownId === uniqueId ? null : uniqueId);
+                                            }}
+                                            style={{ 
+                                                display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold', 
+                                                color: isDraft ? '#888' : '#4caf50', 
+                                                background: isDraft ? '#f5f5f5' : '#e8f5e9', 
+                                                border: `1px solid ${isDraft ? '#ddd' : '#c8e6c9'}`,
+                                                padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', transition: '0.2s'
+                                            }}
+                                        >
+                                            {isDraft ? '📝 แบบร่าง' : '🌍 เผยแพร่แล้ว'}
+                                            <ChevronDown size={14} />
+                                        </button>
+
+                                        {openStatusDropdownId === uniqueId && (
+                                            <div style={{ position: 'absolute', top: '110%', right: 0, width: '130px', backgroundColor: '#fff', boxShadow: '0 5px 15px rgba(0,0,0,0.1)', borderRadius: '10px', zIndex: 30, overflow: 'hidden', border: '1px solid #eee' }}>
+                                                <div 
+                                                    onMouseDown={(e) => handleStatusChange(work.id, work.type, 'published', e)} 
+                                                    style={{ padding: '10px 15px', fontSize: '13px', color: '#4caf50', cursor: 'pointer', fontWeight: !isDraft ? 'bold' : 'normal', backgroundColor: !isDraft ? '#f6ffed' : '#fff' }}
+                                                >
+                                                    🌍 เผยแพร่
+                                                </div>
+                                                <div 
+                                                    onMouseDown={(e) => handleStatusChange(work.id, work.type, 'draft', e)} 
+                                                    style={{ padding: '10px 15px', fontSize: '13px', color: '#888', cursor: 'pointer', fontWeight: isDraft ? 'bold' : 'normal', backgroundColor: isDraft ? '#fafafa' : '#fff' }}
+                                                >
+                                                    📝 เก็บเป็นร่าง
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <button 
                                     onClick={() => setShowManageDropdown(!showManageDropdown)}
                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 25px', border: '1px solid #eee', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', color: showManageDropdown ? '#9b67bd' : '#333', transition: '0.2s' }}

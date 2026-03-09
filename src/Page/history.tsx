@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../client";
-import { NovelImage } from "../components/novelimage";
+import { NovelCard, type Novel } from "../components/novelcard"; // 🌟 Import NovelCard มาใช้[cite: 8]
 
 interface HistoryItem {
     history_id: number;
@@ -11,6 +11,13 @@ interface HistoryItem {
     title: string;
     cover_image: string | null;
     last_read_at: string;
+    // 🌟 รับสถิติจาก Backend
+    category?: string;
+    author?: string;
+    chapter_count?: number;
+    view_count?: number;
+    bookmark_count?: number;
+    is_completed?: number;
 }
 
 export function HistoryPage() {
@@ -85,6 +92,33 @@ export function HistoryPage() {
                                         </button>
                                     </Link>
                                 </div>
+                                
+                                {/* 🌟 ส่วนปุ่มอ่านต่อด้านล่าง */}
+                                <div style={{ marginTop: '10px', background: '#f8f9fa', padding: '12px', borderRadius: '12px', border: '1px solid #eee' }}>
+                                    <p style={{ margin: "0 0 10px 0", fontSize: "0.8rem", color: "#666", textAlign: "center" }}>
+                                        อ่านล่าสุด: {new Date(item.last_read_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
+                                    </p>
+                                    <Link 
+                                        to={`/${item.work_type === 'novel' ? 'novel' : 'manga'}/${item.work_id}/chapters/${item.chapter_id}`} 
+                                        style={{ textDecoration: "none" }}
+                                    >
+                                        <button 
+                                            style={{ 
+                                                width: "100%", padding: "10px", 
+                                                background: item.work_type === 'novel' ? "#6a4c93" : "#ff7b00", 
+                                                color: "white", border: "none", borderRadius: "8px", 
+                                                fontWeight: "bold", cursor: "pointer", transition: "transform 0.1s",
+                                                boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
+                                            }} 
+                                            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'} 
+                                            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+                                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                        >
+                                            อ่านต่อตอนล่าสุด
+                                        </button>
+                                    </Link>
+                                </div>
+                                
                             </div>
                         ))}
                     </div>

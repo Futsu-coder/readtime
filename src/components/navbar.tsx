@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-// 🌟 1. นำเข้าไอคอน Shield มาใช้สำหรับปุ่มแอดมิน
 import { Search, Bell, Pencil, User, BookOpen, Settings, LogOut, Bookmark, Shield } from 'lucide-react';
 import { client, API_URL } from "../client"; 
 
@@ -11,11 +10,20 @@ interface SearchResult {
     cover_image?: string;
 }
 
+// 🌟 สร้าง Interface มารับข้อมูล User
+interface UserProfile {
+    username: string;
+    author: string | null;
+    avatar_url: string | null;
+}
+
 export function Navbar() {
     const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
-    // 🌟 2. เพิ่ม State สำหรับเก็บสถานะว่าเป็น Admin ไหม
     const [isAdmin, setIsAdmin] = useState(false); 
+
+    // 🌟 State เก็บข้อมูลโปรไฟล์ผู้ใช้
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
     const [showProfile, setShowProfile] = useState(false);
     const [showNoti, setShowNoti] = useState(false);
@@ -27,18 +35,33 @@ export function Navbar() {
     const [showSearchDropdown, setShowSearchDropdown] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
 
-    // 🌟 3. เพิ่ม useEffect เพื่อแกะ Token ดูสิทธิ์ (Role) ตอนเปิดเว็บ
+    // 🌟 ดึงข้อมูล User & เช็ค Token ตอนโหลดหน้า
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
             try {
-                // แกะข้อมูลที่ซ่อนอยู่ใน Token (Payload)
+                // แกะ Token เช็คสิทธิ์
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                console.log("แกะกล่อง Token ดูหน่อย:", payload);
-                // ถ้า Role เป็น admin หรือ super_admin ให้เปิดโหมดแอดมิน!
                 if (payload.role === 'admin' || payload.role === 'super_admin') {
                     setIsAdmin(true);
                 }
+
+                // 🌟 ยิง API ไปดึงข้อมูลโปรไฟล์ (รูป & นามปากกา)
+                fetch(`${API_URL}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.user) {
+                        setUserProfile({
+                            username: data.user.username,
+                            author: data.user.author,
+                            avatar_url: data.user.avatar_url
+                        });
+                    }
+                })
+                .catch(err => console.error("ไม่สามารถดึงข้อมูลโปรไฟล์มาโชว์ Navbar ได้:", err));
+
             } catch (e) {
                 console.error("Token parse error", e);
             }
@@ -110,10 +133,24 @@ export function Navbar() {
     const handleLogout = () => {
         localStorage.removeItem('token');
         setIsLoggedIn(false);
-        setIsAdmin(false); // เคลียร์สิทธิ์แอดมินตอนล็อกเอาต์ด้วย
+        setIsAdmin(false); 
+        setUserProfile(null); // เคลียร์ Profile ด้วย
         setShowProfile(false);
         window.location.reload();
         navigate('/');
+    };
+
+    // 🌟 ฟังก์ชันหา Source ของรูปที่จะแสดงบน Navbar
+    const getNavAvatarUrl = () => {
+        if (userProfile?.avatar_url) return `${API_URL}${userProfile.avatar_url}`;
+        if (userProfile?.username) return `https://api.dicebear.com/7.x/bottts/svg?seed=${userProfile.username}`;
+        return null;
+    };
+
+    // 🌟 ฟังก์ชันหาชื่อที่จะแสดง (ถ้านามปากกาไม่มี ให้ใช้ Username)
+    const getDisplayName = () => {
+        if (!userProfile) return "กำลังโหลด...";
+        return userProfile.author || userProfile.username;
     };
 
     return (
@@ -146,7 +183,7 @@ export function Navbar() {
                                     <div 
                                         key={`${result.type}-${result.id}`} 
                                         onClick={() => { 
-                                            handleNavigate(`/${result.type === 'novel' ? 'novels' : 'mangas'}/${result.id}`);
+                                            handleNavigate(`/${result.type === 'novel' ? 'novel' : 'manga'}/${result.id}`);
                                             setSearchTerm('');
                                             setShowSearchDropdown(false);
                                         }}
@@ -179,7 +216,6 @@ export function Navbar() {
                 <div style={navRightSide}>
                     {isLoggedIn ? (
                         <>
-                            {/* 🌟 4. ปุ่มเข้าห้องลับแอดมิน (โชว์เฉพาะคนที่มีสิทธิ์) */}
                             {isAdmin && (
                                 <div style={iconBadge} onClick={() => handleNavigate('/admin')} title="Admin Dashboard">
                                     <Shield size={22} strokeWidth={1.5} color="#e11d48" />
@@ -190,15 +226,34 @@ export function Navbar() {
                                 <Pencil size={22} strokeWidth={1.5} color="#333" />
                             </div>                            
                             <div style={{ position: 'relative' }} ref={dropdownRef}>
+                                
+                                {/* 🌟 ตรงนี้คือปุ่มกลมๆ มุมขวาบน (เปลี่ยนให้โชว์รูปแทนตัวการ์ตูนขาวดำ) */}
                                 <div style={avatarWrapper} onClick={() => { setShowProfile(!showProfile); setShowNoti(false); }}>
-                                    <User size={20} color="#fff" />
+                                    {getNavAvatarUrl() ? (
+                                        <img src={getNavAvatarUrl()!} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    ) : (
+                                        <User size={20} color="#fff" />
+                                    )}
                                 </div>
+                                
                                 {showProfile && (
                                     <div style={profileDropdown}>
                                         <div style={profileHeader}>
-                                            <div style={profileImgCircle}><User size={18} color="#fff" /></div>
-                                            <span style={profileNameText}>นักอ่าน</span>
+                                            {/* 🌟 รูป และ ชื่อ ในกล่อง Dropdown */}
+                                            <div style={profileImgCircle}>
+                                                 {getNavAvatarUrl() ? (
+                                                    <img src={getNavAvatarUrl()!} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                                ) : (
+                                                    <User size={18} color="#fff" />
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={profileNameText}>{getDisplayName()}</span>
+                                                {/* ถ้ามีนามปากกา โชว์ username เล็กๆ ไว้ข้างใต้ด้วย */}
+                                                {userProfile?.author && <span style={{ fontSize: '12px', color: '#999' }}>@{userProfile.username}</span>}
+                                            </div>
                                         </div>
+                                        
                                         <div style={divider}></div>                                        
                                         <div style={menuItem} onClick={() => handleNavigate('/dashborad')}>
                                             <Pencil size={18} color="#666" /> จัดการงานเขียน
@@ -213,8 +268,8 @@ export function Navbar() {
                                             <Settings size={18} color="#666" /> ตั้งค่าโปรไฟล์
                                         </div>                                        
                                         <div style={divider}></div>
-                                        <div style={logoutBtn} onClick={handleLogout}>
-                                            <LogOut size={18} /> ออกจากระบบ
+                                        <div style={{...menuItem, color: '#ff4d4f', fontWeight: 'bold'}} onClick={handleLogout}>
+                                            <LogOut size={18} color="#ff4d4f" /> ออกจากระบบ
                                         </div>
                                     </div>
                                 )}
@@ -232,7 +287,7 @@ export function Navbar() {
     );
 }
 
-// ... (Styles ด้านล่างคงเดิมทั้งหมดครับ ไม่ได้แก้เลย) ...
+// ... Styles เดิม ...
 const navbarStyle: React.CSSProperties = { padding: '12px 0', borderBottom: '1px solid #f3f3f3', backgroundColor: '#fff', position: 'sticky', top: 0, zIndex: 1000, fontFamily: "'Kanit', sans-serif" };
 const navInner: React.CSSProperties = { maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 50px' };
 const navLeftSide: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '40px', flexShrink: 0 };
@@ -253,12 +308,11 @@ const redDot: React.CSSProperties = { position: 'absolute', top: '8px', right: '
 const avatarWrapper: React.CSSProperties = { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#9b67bd', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(155, 103, 189, 0.3)' };
 
 const profileDropdown: React.CSSProperties = { position: 'absolute', top: '55px', right: '0', width: '230px', backgroundColor: '#fff', borderRadius: '15px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', zIndex: 2000, overflow: 'hidden', border: '1px solid #f0f0f0' };
-const profileHeader: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '15px', gap: '12px', backgroundColor: '#fafafa' };
-const profileImgCircle: React.CSSProperties = { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#9b67bd', display: 'flex', justifyContent: 'center', alignItems: 'center' };
+const profileHeader: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '15px', gap: '15px', backgroundColor: '#fafafa' };
+const profileImgCircle: React.CSSProperties = { width: '45px', height: '45px', borderRadius: '50%', backgroundColor: '#9b67bd', display: 'flex', justifyContent: 'center', alignItems: 'center' };
 const profileNameText: React.CSSProperties = { fontSize: '16px', color: '#333', fontWeight: 'bold' };
 const divider: React.CSSProperties = { height: '1px', backgroundColor: '#f0f0f0' };
 const menuItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', color: '#444', cursor: 'pointer', fontSize: '14px', transition: '0.2s' };
-const logoutBtn: React.CSSProperties = { padding: '15px', textAlign: 'center', color: '#ff4d4f', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', transition: '0.2s' };
 
 const loginBtn: React.CSSProperties = { padding: '10px 20px', backgroundColor: 'transparent', color: '#555', border: '1px solid #ddd', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' };
 const registerBtn: React.CSSProperties = { padding: '10px 20px', backgroundColor: '#9b67bd', color: 'white', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 10px rgba(155, 103, 189, 0.3)' };

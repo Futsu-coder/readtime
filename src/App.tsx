@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { useEffect } from "react"; // 🌟 1. เพิ่ม useEffect
 
 import { HomePage } from "./Page/homepage";
 import { Navbar } from "./components/navbar";
@@ -18,7 +19,6 @@ import { Readchapterpage } from "./Page/readnovel";
 import { EditNovelPage } from "./Page/editnovel";
 import { EditChapterPage } from "./Page/editchapter";
 
-
 import { CreateMangaPage } from "./Page/createManga";
 import { CreateMangaChapterPage } from "./Page/createMangaChapter";
 import { MangaDetailPage } from "./Page/mangadetail";
@@ -26,9 +26,41 @@ import { ReadMangaPage } from "./Page/readmanga";
 import { EditMangaPage } from "./Page/editmanga";
 import { EditMangaChapterPage } from "./Page/editchaptermanga";
 
+import { AdminDashboard } from "./Page/admindashboard";
 
 function App() {
   const token = localStorage.getItem('token')
+
+  // 🌟 3. ด่านตรวจคนเข้าเมือง: เช็คสถานะแบนทุกครั้งที่โหลดแอป
+  useEffect(() => {
+    const checkBanStatus = async () => {
+      if (!token) return; // ถ้าไม่มี Token (ยังไม่ล็อกอิน) ปล่อยผ่าน
+      
+      try {
+        const res = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 403) {
+          const data = await res.json();
+          if (data.isBanned) {
+            alert(`🚨 ประกาศจากระบบ:\n${data.error}`);
+            localStorage.removeItem('token'); // ทำลายกุญแจ
+            window.location.href = '/login'; // เตะกลับหน้า Login ทันที
+          }
+        } else if (res.status === 401) {
+          // ถ้า Token หมดอายุ ก็เตะออกเงียบๆ
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
+      } catch (err) {
+        console.error("ระบบตรวจสอบผู้ใช้ขัดข้อง:", err);
+      }
+    };
+
+    checkBanStatus();
+  }, [token]);
+
   return(
     <BrowserRouter>
       <Navbar/> 
@@ -56,7 +88,10 @@ function App() {
           <Route path="/manga/:id/chapters/:chapterId" element={<ReadMangaPage />} />
           <Route path="/manga/:id/edit" element={token ? <EditMangaPage /> : <Navigate to="/login"/>} />
           <Route path="/manga/:id/chapter/:chapterId/edit" element={token ? <EditMangaChapterPage/> : <Navigate to="/login"/>}/>
+
           <Route path="/history" element={token ?<HistoryPage />  : <Navigate to="/login"/>} />
+
+          <Route path="/admin" element={token ? <AdminDashboard/> : <Navigate to="/login"/>}/>
         </Routes>
       </div>
     </BrowserRouter>

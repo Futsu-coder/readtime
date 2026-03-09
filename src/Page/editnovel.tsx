@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react"; 
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { client, API_URL } from "../client"; 
 import { NovelImage } from "../components/novelimage"; 
@@ -11,11 +11,14 @@ interface Novel {
     category: string;
     owner_id: number;
     cover_image?: string | null;
+    is_completed?: number; // 🌟 รับค่าสถานะจบ 0 หรือ 1
 }
+
 interface NovelResponse {
     novel: Novel;
     chapters?: Chapter[];
 }
+
 interface Chapter {
     id: number;
     title: string;
@@ -27,7 +30,8 @@ export function EditNovelPage() {
     const navigate = useNavigate();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("General");
+    const [category, setCategory] = useState("");
+    const [isCompleted, setIsCompleted] = useState(0); // 🌟 State เก็บสถานะจบเนื้อเรื่อง
     const [chapters, setChapters] = useState<Chapter[]>([]); 
     const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null); 
     const [coverFile, setCoverFile] = useState<File | null>(null); 
@@ -41,8 +45,10 @@ export function EditNovelPage() {
     const [isPublished, setIsPublished] = useState(false);
     const [isCompleted, setIsCompleted] = useState(false);
 
+    const [categoriesList, setCategoriesList] = useState<string[]>([]);
+
     useEffect(() => {
-        const fetchNovel = async () => {
+        const fetchInitialData = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) { navigate('/login'); return; }
@@ -54,9 +60,10 @@ export function EditNovelPage() {
                     const data = await res.json() as unknown as NovelResponse;
                     setTitle(data.novel.title);
                     setDescription(data.novel.description || "");
-                    setCategory(data.novel.category || "General");
-                    setCurrentCoverUrl(data.novel.cover_image||null); 
+                    setCategory(data.novel.category || "");
+                    setCurrentCoverUrl(data.novel.cover_image || null); 
                     setChapters(data.chapters || []);
+                    setIsCompleted(data.novel.is_completed || 0); // 🌟 โหลดค่าจาก DB
                 } else {
                     navigate('/dashborad');
                 }
@@ -67,7 +74,7 @@ export function EditNovelPage() {
                 setIsLoading(false);
             }
         };
-        if (id) fetchNovel();
+        if (id) fetchInitialData();
     }, [id, navigate]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +112,8 @@ export function EditNovelPage() {
         try {
             const token = localStorage.getItem('token');
             const res = await client.api.protected.novels[":id"].$put(
-                { param: { id: id! }, json: { title, description, category } },
+                // 🌟 ส่งค่า is_completed กลับไปที่ Backend
+                { param: { id: id! }, json: { title, description, category, is_completed: isCompleted } },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             if (res.ok) setStatusMsg("บันทึกข้อมูลสำเร็จ!");

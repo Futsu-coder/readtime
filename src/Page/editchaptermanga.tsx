@@ -1,24 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Plus, GripVertical, Trash2 } from 'lucide-react'; 
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { Globe, FileEdit, Plus, GripVertical, Trash2, ChevronLeft } from 'lucide-react';
 import { API_URL } from "../client";
 
-// ปรับ Interface ให้รองรับทั้งหน้าเก่า (มี id) และหน้าใหม่ (มี file)
-interface PageImage {
+// 🌟 สร้างโครงสร้างข้อมูลให้รองรับทั้งรูปเก่าและรูปใหม่
+interface PageItem {
     id?: number;
-    file?: File;
-    preview: string;
+    url?: string;  // มีค่าถ้าเป็นรูปเก่า
+    file?: File;   // มีค่าถ้าเป็นรูปใหม่ที่เพิ่งเลือก
+    preview: string; // ใช้โชว์บนหน้าจอ
 }
 
 export function EditMangaChapterPage() {
     const { id, chapterId } = useParams<{ id: string; chapterId: string }>();
     const navigate = useNavigate();
-
-    // --- State สำหรับ API ---
-    const [title, setTitle] = useState('');
-    const [chapterNumber, setChapterNumber] = useState('');
-    const [pages, setPages] = useState<PageImage[]>([]);
-    const [isLoadingData, setIsLoadingData] = useState(true);
+    const [title, setTitle] = useState("");
+    const [chapterNumber, setChapterNumber] = useState("");
+    const [pages, setPages] = useState<PageItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     
     // --- UI Control States ---
@@ -33,12 +32,15 @@ export function EditMangaChapterPage() {
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
-    // --- โหลดข้อมูลเดิม (จาก editchaptermanga.tsx เดิม) ---
     useEffect(() => {
         const fetchChapterData = async () => {
             if (!id || !chapterId) return;
             try {
-                const res = await fetch(`${API_URL}/api/public/mangas/${id}/chapters/${chapterId}`);
+                const token = localStorage.getItem("token");
+                const res = await fetch(`${API_URL}/api/protected/manga/${id}/chapters/${chapterId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
                 if (res.ok) {
                     const data = await res.json();
                     if (data.chapter) {
@@ -46,12 +48,12 @@ export function EditMangaChapterPage() {
                         setChapterNumber(data.chapter.chapter_number.toString());
                     }
                     if (data.pages) {
-                        // แปลงข้อมูลหน้ากระดาษเดิมให้อยู่ในรูปแบบที่ UI ของ Create ต้องการ
-                        const existingPages = data.pages.map((p: any) => ({
+                        // 🌟 แปลงรูปเก่าให้เข้ามาอยู่ใน State
+                        setPages(data.pages.map((p: any) => ({
                             id: p.id,
+                            url: p.image_url,
                             preview: `${API_URL}${p.image_url}`
-                        }));
-                        setPages(existingPages);
+                        })));
                     }
                 } else {
                     alert("ไม่พบข้อมูลตอนมังงะ");
@@ -67,14 +69,10 @@ export function EditMangaChapterPage() {
         fetchChapterData();
     }, [id, chapterId, navigate]);
 
-    // 🌟 ฟังก์ชันจัดการ Drag & Drop
+    // 🌟 จัดการลากวาง (Drag & Drop)
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
         dragItem.current = position;
-        setTimeout(() => {
-            if (e.target instanceof HTMLElement) {
-                e.target.style.opacity = '0.5';
-            }
-        }, 0);
+        setTimeout(() => { if (e.target instanceof HTMLElement) e.target.style.opacity = '0.5'; }, 0);
     };
 
     const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
@@ -82,22 +80,18 @@ export function EditMangaChapterPage() {
     };
 
     const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
-        if (e.target instanceof HTMLElement) {
-            e.target.style.opacity = '1';
-        }
-
+        if (e.target instanceof HTMLElement) e.target.style.opacity = '1';
         if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
             const _pages = [...pages];
             const draggedItemContent = _pages.splice(dragItem.current, 1)[0];
             _pages.splice(dragOverItem.current, 0, draggedItemContent);
             setPages(_pages);
         }
-        
         dragItem.current = null;
         dragOverItem.current = null;
     };
 
-    // 🌟 ฟังก์ชันจัดการไฟล์
+    // 🌟 เลือกรูปใหม่เพิ่มเข้าไป
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
@@ -109,6 +103,19 @@ export function EditMangaChapterPage() {
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
+
+    const removePage = (indexToRemove: number) => {
+        setPages(prev => prev.filter((_, index) => index !== indexToRemove));
+    };
+
+    // 🌟 บันทึกข้อมูล
+    const handleUpdate = async (targetStatus: 'published' | 'draft', e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!chapterNumber.trim()) return setStatusMsg("⚠️ กรุณาระบุเลขตอน");
+        if (pages.length === 0) return setStatusMsg("⚠️ กรุณาเพิ่มรูปภาพอย่างน้อย 1 หน้า");
+
+        setIsSaving(true);
+        setStatusMsg(targetStatus === 'draft' ? 'กำลังบันทึกเป็นแบบร่าง...' : 'กำลังอัปโหลดและเผยแพร่...');
 
     const removePage = (indexToRemove: number) => {
         setPages(prev => prev.filter((_, index) => index !== indexToRemove));

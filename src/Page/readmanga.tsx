@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../client";
 import { CommentSection } from "../components/comment";
+import { Flag } from 'lucide-react';
+import { ReportModal } from '../components/ReportModal';
 
 interface MangaChapter {
     id: number;
@@ -24,6 +26,7 @@ export function ReadMangaPage() {
     const [allChapters, setAllChapters] = useState<MangaChapter[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [showReport, setShowReport] = useState(false);
 
     useEffect(() => {
         const fetchAllChapters = async () => {
@@ -154,7 +157,7 @@ export function ReadMangaPage() {
             }}>
                 <button 
                     disabled={!prevChapter}
-                    onClick={() => prevChapter && navigate(`/manga/${id}/read/${prevChapter.id}`)}
+                    onClick={() => prevChapter && navigate(`/manga/${id}/chapters/${prevChapter.id}`)}
                     style={{ 
                         visibility: prevChapter ? 'visible' : 'hidden', 
                         padding: '12px 25px', cursor: 'pointer', background: '#f5f5f5', // ปรับปุ่มกลับให้สว่าง
@@ -166,7 +169,7 @@ export function ReadMangaPage() {
 
                 <button 
                     disabled={!nextChapter}
-                    onClick={() => nextChapter && navigate(`/manga/${id}/read/${nextChapter.id}`)}
+                    onClick={() => nextChapter && navigate(`/manga/${id}/chapters/${nextChapter.id}`)}
                     style={{ 
                         visibility: nextChapter ? 'visible' : 'hidden', 
                         padding: '12px 25px', cursor: 'pointer', background: '#c98bf2', 
@@ -182,6 +185,12 @@ export function ReadMangaPage() {
                     <CommentSection workType="manga" workId={id!} chapterId={chapterId!} />
                 </div>
             )}
+            <ReportModal 
+                isOpen={showReport} 
+                onClose={() => setShowReport(false)} 
+                workId={Number(id)} 
+                workType="manga" 
+                chapterTitle={chapter.title ? `ตอนที่ ${chapter.chapter_number} - ${chapter.title}` : `ตอนที่ ${chapter.chapter_number}`}/>
         </div>
     );
 }

@@ -1,19 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../client";
-import { NovelCard } from "../components/novelcard";
-
-interface Work {
-    id: number;
-    title: string;
-    description: string;
-    category: string;
-    cover_image?: string | null;
-    type: 'novel' | 'manga'; 
-}
+import { NovelCard, type Novel } from "../components/novelcard";
 
 export function MyBookmarksPage() {
-    const [works, setWorks] = useState<Work[]>([]);
+    const [works, setWorks] = useState<Novel[]>([]); // 🌟 ใช้ Type จาก NovelCard ได้เลย
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const isLoggedIn = !!localStorage.getItem('token');

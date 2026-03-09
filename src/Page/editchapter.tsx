@@ -6,30 +6,32 @@ import { RichTextEditor } from "../components/RichtextEditor";
 export function EditChapterPage() {
     const { id, chapterId } = useParams<{ id: string; chapterId: string }>();
     const navigate = useNavigate();
-    
     const [novelTitle, setNovelTitle] = useState('');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [status, setStatus] = useState('');
+    const [statusMsg, setStatusMsg] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    
-    // UI States เหมือน addchapter
-    const [isPublished, setIsPublished] = useState(false);
-    const [showSaveConfirm, setShowSaveConfirm] = useState(false);
-    const [showSuccessOption, setShowSuccessOption] = useState(false);
-    const [showPublishModal, setShowPublishModal] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const fetchChapterData = async () => {
             if (!id || !chapterId) return;
             try {
-                const novelRes = await client.api.public.novels[':id'].$get({ param: { id } });
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                if (novelRes.ok) setNovelTitle((await novelRes.json() as any).novel.title);
+                const token = localStorage.getItem('token');
+                
+                const novelRes = await fetch(`${API_URL}/api/protected/novels/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (novelRes.ok) {
+                    const novelData = await novelRes.json() as any;
+                    setNovelTitle(novelData.novel.title);
+                }
 
-                const chapRes = await client.api.public.novels[':id'].chapters[':chapterID'].$get({ param: { id, chapterID: chapterId } });
+                const chapRes = await fetch(`${API_URL}/api/protected/novels/${id}/chapters/${chapterId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
                 if (chapRes.ok) {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const cData = await chapRes.json() as any;
                     if (cData.chapter) { 
                         setTitle(cData.chapter.title); 

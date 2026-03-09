@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { client } from "../client";
-import { RichTextEditor } from "../components/RichtextEditor"; // 🌟 ดึง Editor ตัวจริงมาใช้
+import { RichTextEditor } from "../components/RichtextEditor"; 
 
 export function AddChapterPage() {
     const { id } = useParams();
@@ -16,6 +16,8 @@ export function AddChapterPage() {
     };
     const [title, setTitle] = useState(() => getSavedDraft().draftTitle);
     const [content, setContent] = useState(() => getSavedDraft().draftContent);
+    
+    // 🌟 ค่าเริ่มต้นคือ false = 'แบบร่าง'
     const [isPublished, setIsPublished] = useState(false);
     const [showSaveConfirm, setShowSaveConfirm] = useState(false);
     const [showSuccessOption, setShowSuccessOption] = useState(false);
@@ -58,8 +60,14 @@ export function AddChapterPage() {
         setStatus('กำลังบันทึกตอนใหม่...');
         try {
             const token = localStorage.getItem('token');
+            const targetStatus = isPublished ? 'published' : 'draft'; // 🌟 ดึงค่าจากสวิตช์
+
             const res = await client.api.protected.novels[':id'].chapters.$post(
-                { param: { id: id! }, json: { title, content } } as any,
+                { 
+                    param: { id: id! }, 
+                    // 🌟 ส่ง status ไปด้วย (ใช้ as any เพื่อกัน type error จาก schema เดิม)
+                    json: { title, content, status: targetStatus } as any 
+                },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
