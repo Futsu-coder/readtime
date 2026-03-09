@@ -270,7 +270,7 @@ export function CreateMangaChapterPage() {
                     <div style={{ ...modalContainer, borderColor: '#4caf50' }}>
                         <h2 style={modalTitle}>✅ อัปโหลดสำเร็จ</h2>
                         <div style={modalActionArea}>
-                            <button style={{ ...btnPublishNow, background: '#4caf50' }} onClick={() => navigate(`/readmangas/${id}`)}>ดูหน้ารายละเอียดมังงะ</button>
+                            <button style={{ ...btnPublishNow, background: '#4caf50' }} onClick={() => navigate(`/manga/${id}`)}>ดูหน้ารายละเอียดมังงะ</button>
                             <button style={btnKeepDraft} onClick={() => {
                                 setShowSuccessOption(false);
                                 setChapterNumber(""); setTitle(""); setPages([]);
@@ -330,7 +330,7 @@ const btnCancelUpload: React.CSSProperties = { width: '60%', padding: '12px 0', 
 
 // --- Styles สำหรับ Modal เดิม (อัปโหลดสำเร็จ) ---
 const modalContainer: React.CSSProperties = { width: '400px', backgroundColor: '#fff', borderRadius: '35px', padding: '45px 35px', textAlign: 'center', border: '4px solid #9b67bd' };
-const modalTitle = { fontSize: '24px', fontWeight: 'bold', marginBottom: '25px' };
+const modalTitle = { fontSize: '24px', fontWeight: 'bold', marginBottom: '25px',color: '#000000' };
 const modalActionArea = { display: 'flex', flexDirection: 'column' as const, gap: '15px' };
 const btnPublishNow: React.CSSProperties = { width: '100%', padding: '15px 0', color: '#fff', border: 'none', borderRadius: '30px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' };
 const btnKeepDraft: React.CSSProperties = { width: '60%', padding: '10px 0', backgroundColor: '#f5f5f5', color: '#666', border: 'none', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer', alignSelf: 'center' };
