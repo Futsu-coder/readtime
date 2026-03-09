@@ -7,9 +7,11 @@ export function ProfilePage() {
     const navigate = useNavigate();
     const [username, setUsername] = useState("");
     const [authorName, setAuthorName] = useState("");
-    const [joinDate, setJoinDate] = useState("");
     
-    // 🌟 States สำหรับรูปโปรไฟล์
+    // 🌟 เพิ่ม State สำหรับเก็บค่าชั่วคราวตอนที่กำลังพิมพ์แก้ไข
+    const [editAuthorName, setEditAuthorName] = useState(""); 
+    
+    // States สำหรับรูปโปรไฟล์
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -29,7 +31,6 @@ export function ProfilePage() {
                     return;
                 }
 
-                // 🌟 แก้กลับเป็น /api/me (เอา auth ออก)
                 const res = await fetch(`${API_URL}/api/me`, { 
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -57,6 +58,8 @@ export function ProfilePage() {
         fetchProfile();
     }, [navigate]);
 
+    const [joinDate, setJoinDate] = useState(""); // ย้ายลงมาจัดกลุ่มให้เรียบร้อย
+
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -73,7 +76,6 @@ export function ProfilePage() {
             const formData = new FormData();
             formData.append("avatar", file);
 
-            // 🌟 แก้กลับเป็น /api/profile/avatar
             const res = await fetch(`${API_URL}/api/profile/avatar`, { 
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
@@ -98,7 +100,7 @@ export function ProfilePage() {
         }
     };
 
-const handleSaveProfile = async () => {
+    const handleSaveProfile = async () => {
         setIsSaving(true);
         setStatusMsg("กำลังบันทึกข้อมูล...");
         try {
@@ -110,16 +112,16 @@ const handleSaveProfile = async () => {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}` 
                 },
-                body: JSON.stringify({ author: authorName })
+                body: JSON.stringify({ author: editAuthorName }) // 🌟 ส่งค่าที่แก้ไขไปบันทึก
             });
 
             if (res.ok) {
                 setStatusMsg("✅ บันทึกนามปากกาสำเร็จ! กำลังอัปเดตข้อมูล...");
+                setAuthorName(editAuthorName); // 🌟 อัปเดตค่าที่แสดงผลให้ตรงกับที่บันทึก
                 
-                // 🌟 หน่วงเวลา 1 วินาทีให้ผู้ใช้เห็นข้อความ แล้วค่อยรีเฟรชหน้า
                 setTimeout(() => {
                     window.location.reload();
-                }, 0); 
+                }, 1000); // 🌟 ปรับหน่วงเวลาเป็น 1 วินาที ให้ผู้ใช้ทันอ่านข้อความ
 
             } else {
                 setStatusMsg("❌ เกิดข้อผิดพลาดในการบันทึก");
@@ -154,12 +156,6 @@ const handleSaveProfile = async () => {
     return (
         <div style={containerStyle}>
             <div style={contentWrapper}>
-                <div style={{ marginBottom: "20px" }}>
-                    <Link to="/" style={{ color: "#bc7df2", textDecoration: "none", fontWeight: 'bold', fontSize: '16px' }}>
-                        &larr; กลับหน้าหลัก
-                    </Link>
-                </div>
-
                 <h2 style={pageTitle}>โปรไฟล์ของฉัน</h2>
                 
                 <div style={profileCardBg}>
@@ -215,7 +211,13 @@ const handleSaveProfile = async () => {
                             </div>
                         )}
                         <div style={{ position: 'relative', display: 'flex', gap: '15px' }}>
-                            <button style={editBtn} onClick={() => setShowEditMenu(true)}>
+                            <button 
+                                style={editBtn} 
+                                onClick={() => {
+                                    setEditAuthorName(authorName); // 🌟 เซ็ตค่าตั้งต้นในป๊อปอัพให้เท่ากับชื่อที่บันทึกไว้
+                                    setShowEditMenu(true);
+                                }}
+                            >
                                 ตั้งค่านามปากกา
                             </button>
                             <button style={logoutBtn} onClick={handleLogout}>
@@ -230,8 +232,8 @@ const handleSaveProfile = async () => {
                                         <input 
                                             type="text" 
                                             style={editInput} 
-                                            value={authorName} 
-                                            onChange={(e) => setAuthorName(e.target.value)}
+                                            value={editAuthorName} // 🌟 ใช้ state สำหรับพิมพ์
+                                            onChange={(e) => setEditAuthorName(e.target.value)}
                                             placeholder="ตั้งนามปากกาสำหรับผลงานของคุณ..."
                                         />
                                         <small style={{ color: "#888", display: "block", marginTop: "8px" }}>
@@ -240,7 +242,12 @@ const handleSaveProfile = async () => {
                                     </div>
 
                                     <div style={editActionGroup}>
-                                        <button style={cancelBtn} onClick={() => setShowEditMenu(false)}>ปิด</button>
+                                        <button 
+                                            style={cancelBtn} 
+                                            onClick={() => setShowEditMenu(false)} // 🌟 ปิดป๊อปอัพโดยไม่เปลี่ยนค่า authorName หลัก
+                                        >
+                                            ยกเลิก
+                                        </button>
                                         <button 
                                             style={confirmBtn} 
                                             onClick={() => {
@@ -249,7 +256,7 @@ const handleSaveProfile = async () => {
                                             }}
                                             disabled={isSaving}
                                         >
-                                            {isSaving ? "กำลังบันทึก..." : "ยืนยัน"}
+                                            {isSaving ? "กำลังบันทึก..." : "บันทึก"}
                                         </button>
                                     </div>
                                 </div>

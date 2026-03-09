@@ -1,9 +1,15 @@
-import { useState, useEffect, useRef } from "react"; 
+import React, { useState, useEffect, useRef } from "react"; 
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Trash2 } from "lucide-react"; 
 import { API_URL } from "../client";
 import { NovelImage } from "../components/novelimage"; 
-import { RichTextEditor } from "../components/RichtextEditor";
+
+// --- ส่วน Interface สำหรับ Pop-up ---
+interface ModalConfig {
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+}
 
 interface Manga {
     id: number;
@@ -12,7 +18,7 @@ interface Manga {
     category: string;
     owner_id: number;
     cover_image?: string | null;
-    is_completed?: number; // 🌟 รับค่าสถานะจบ 0 หรือ 1[cite: 20]
+    is_completed?: number; 
 }
 
 interface MangaChapter {
@@ -31,21 +37,30 @@ interface MangaResponse {
 export function EditMangaPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    
+    // States ข้อมูลมังงะ
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState("");
-    const [isCompleted, setIsCompleted] = useState(0); // 🌟 State เก็บสถานะจบเนื้อเรื่อง[cite: 20]
-    const [chapters, setChapters] = useState<MangaChapter[]>([]);
-    const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null);
-    const [coverFile, setCoverFile] = useState<File | null>(null);
-    const [coverPreview, setCoverPreview] = useState<string | null>(null);
+    const [isCompleted, setIsCompleted] = useState(0); 
+    const [chapters, setChapters] = useState<MangaChapter[]>([]); 
+    const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null); 
+    const [coverFile, setCoverFile] = useState<File | null>(null); 
+    const [coverPreview, setCoverPreview] = useState<string | null>(null); 
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [statusMsg, setStatusMsg] = useState("");
-
-    // 🌟 State เก็บรายการหมวดหมู่
     const [categoriesList, setCategoriesList] = useState<string[]>([]);
+    const [isPublished, setIsPublished] = useState(true); 
+
+    // --- State สำหรับควบคุม Pop-up ---
+    const [modalConfig, setModalConfig] = useState<ModalConfig>({
+        show: false,
+        title: "",
+        message: "",
+        onConfirm: () => {},
+    });
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -53,14 +68,12 @@ export function EditMangaPage() {
                 const token = localStorage.getItem('token');
                 if (!token) { navigate('/login'); return; }
                 
-                // 🌟 ดึงหมวดหมู่ทั้งหมดมาก่อน
                 const catRes = await fetch(`${API_URL}/api/public/categories`);
                 if (catRes.ok) {
                     const catData = await catRes.json();
                     if (catData.categories) setCategoriesList(catData.categories);
                 }
 
-                // ดึงข้อมูลมังงะ
                 const res = await fetch(`${API_URL}/api/protected/manga/${id}`, {
                      headers: { Authorization: `Bearer ${token}` }
                 });
@@ -72,7 +85,7 @@ export function EditMangaPage() {
                     setCategory(data.manga.category || "");
                     setCurrentCoverUrl(data.manga.cover_image || null); 
                     setChapters(data.chapters || []);
-                    setIsCompleted(data.manga.is_completed || 0); // 🌟 โหลดค่าจาก DB[cite: 20]
+                    setIsCompleted(data.manga.is_completed || 0);
                 } else {
                     alert("ไม่พบข้อมูลมังงะ (หรือคุณไม่ใช่เจ้าของผลงาน)");
                     navigate('/dashborad');
@@ -87,10 +100,18 @@ export function EditMangaPage() {
         if (id) fetchInitialData();
     }, [id, navigate]);
 
+    // ฟังก์ชันเปิด Pop-up
+    const openConfirm = (title: string, message: string, onConfirm: () => void) => {
+        setModalConfig({ show: true, title, message, onConfirm });
+    };
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (!file.type.startsWith("image/")) return alert("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+            if (!file.type.startsWith("image/")) {
+                setStatusMsg("กรุณาเลือกไฟล์รูปภาพเท่านั้น");
+                return;
+            }
             setCoverFile(file);
             setCoverPreview(URL.createObjectURL(file));
         }
@@ -107,18 +128,14 @@ export function EditMangaPage() {
             const res = await fetch(`${API_URL}/api/protected/manga/${id}/cover`, {
                 method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData
             });
-
             const data = await res.json();
             if (res.ok) {
-                setStatusMsg("✅ อัปโหลดหน้าปกสำเร็จ!");
+                setStatusMsg("อัปโหลดหน้าปกสำเร็จ!");
                 setCurrentCoverUrl(data.cover_image); 
                 setCoverFile(null); setCoverPreview(null);
-            } else { setStatusMsg(`❌ อัปโหลดไม่สำเร็จ`); }
-        } catch (err) { 
-            console.error(err)
-            setStatusMsg("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ"); } 
-        finally { 
-            setIsUploading(false); setTimeout(() => setStatusMsg(""), 3000); }
+            }
+        } catch (err) { console.log(err); } 
+        finally { setIsUploading(false); setTimeout(() => setStatusMsg(""), 3000); }
     };
 
     const handleSaveDetails = async () => {
@@ -128,18 +145,23 @@ export function EditMangaPage() {
             const res = await fetch(`${API_URL}/api/protected/manga/${id}`, {
                 method: "PUT",
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ title, description, category, is_completed: isCompleted }) // 🌟 ส่งค่า is_completed ไปบันทึกด้วย[cite: 20]
+                body: JSON.stringify({ 
+                    title, 
+                    description, 
+                    category, 
+                    is_completed: isCompleted 
+                })
             });
-            if (res.ok) setStatusMsg("✅ บันทึกข้อมูลสำเร็จ");
-            else setStatusMsg("❌ บันทึกไม่สำเร็จ");
+
+            if (res.ok) setStatusMsg("บันทึกข้อมูลสำเร็จ!");
+            else setStatusMsg("บันทึกไม่สำเร็จ"); 
         } catch (err) {
-            console.error(err) 
-            setStatusMsg("❌ เกิดข้อผิดพลาด"); }
+            setStatusMsg("เกิดข้อผิดพลาด"); 
+        }
         setTimeout(() => setStatusMsg(""), 3000);
     };
 
-    const handleDeleteChapter = async (chapterId: number) => {
-        if (!confirm("ต้องการลบตอนนี้ใช่หรือไม่?\n(เมื่อลบแล้วจะไม่สามารถกู้คืนได้)")) return;
+    const executeDeleteChapter = async (chapterId: number) => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/protected/manga/${id}/chapters/${chapterId}`, {
@@ -147,202 +169,194 @@ export function EditMangaPage() {
             });
             if (res.ok) {
                 setChapters(chapters.filter(ch => ch.id !== chapterId));
-                setStatusMsg("✅ ลบตอนเรียบร้อยแล้ว");
-                setTimeout(() => setStatusMsg(""), 3000);
             }
         } catch (err) { console.error(err); }
+        setModalConfig(prev => ({ ...prev, show: false }));
     };
 
-    const handleDeleteManga = async () => {
-        const confirmDelete = window.confirm(`คุณแน่ใจหรือไม่ที่จะลบเรื่อง "${title}"?\n⚠️ การกระทำนี้จะลบข้อมูลตอนและรูปภาพทั้งหมดอย่างถาวร และไม่สามารถกู้คืนได้!`);
-        if (!confirmDelete) return;
-
+    const executeDeleteManga = async () => {
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/protected/manga/${id}`, {
-                method: "DELETE", 
-                headers: { Authorization: `Bearer ${token}` }
+                method: "DELETE", headers: { Authorization: `Bearer ${token}` }
             });
-            
-            if (res.ok) {
-                alert("🗑️ ลบมังงะเรียบร้อยแล้ว");
-                navigate('/dashborad'); 
-            } else {
-                const data = await res.json();
-                alert(`❌ ลบไม่สำเร็จ: ${data.error}`);
-            }
-        } catch (err) { 
-            console.error(err);
-            alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อ Server");
-        }
+            if (res.ok) navigate('/dashborad');
+        } catch (err) { console.error(err); }
+        setModalConfig(prev => ({ ...prev, show: false }));
     };
 
-    if (isLoading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>⏳ กำลังโหลดข้อมูล...</div>;
+    if (isLoading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#000' }}>กำลังโหลดข้อมูล...</div>;
 
     return (
-        <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', fontFamily: "'Sarabun', sans-serif" }}>
+        <div style={{ background: '#f5f5f5', minHeight: '100vh', padding: '40px 20px', fontFamily: "'Sarabun', sans-serif" }}>
             
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'center' }}>
-                <h2 style={{ margin: 0, color: '#9b67bd', fontSize: '24px' }}>แก้ไขมังงะ: {title}</h2>
-                <Link to="/dashborad">
-                    <button style={{ padding: '10px 20px', border: '1px solid #ddd', background: 'white', borderRadius: '8px', cursor: 'pointer', color:'#555', fontWeight: 'bold', transition: '0.2s' }}>
-                        &larr; กลับหน้าจัดการ
-                    </button>
-                </Link>
-            </div>
-
-            {/* Cover Section */}
-            <div style={{ background: 'white', padding: '30px', borderRadius: '15px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: '30px', textAlign: 'center' }}>
-                <h3 style={{ marginTop: 0, color: '#9b67bd', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>หน้าปกมังงะ</h3>
-                <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    title="คลิกเพื่อเปลี่ยนรูปหน้าปก"
-                    style={{ 
-                        margin: '20px auto', width: '180px', height: '260px', position: 'relative',
-                        cursor: 'pointer', borderRadius: '10px', overflow: 'hidden',
-                        boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-                        border: (coverPreview || currentCoverUrl) ? 'none' : '2px dashed #ccc'
-                    }}
-                >
-                    {coverPreview ? (
-                        <img src={coverPreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> 
-                    ) : currentCoverUrl ? (
-                        <NovelImage src={currentCoverUrl} style={{ width: '100%', height: '100%' }} />
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#fcfcfc', color: '#aaa' }}>
-                            <span style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🖼️</span>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>คลิกเพื่อเลือกรูป</span>
+            {/* --- Pop-up UI (Custom Modal) --- */}
+            {modalConfig.show && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+                    <div style={{ background: 'white', padding: '30px', borderRadius: '25px', width: '90%', maxWidth: '400px', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+                        <h2 style={{ color: '#bc7df2', marginBottom: '15px', fontSize: '22px', fontWeight: 'normal' }}>{modalConfig.title}</h2>
+                        <p style={{ color: '#666', marginBottom: '30px', lineHeight: '1.5' }}>{modalConfig.message}</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                            <button 
+                                onClick={() => setModalConfig(prev => ({ ...prev, show: false }))}
+                                style={{ padding: '10px 25px', background: '#eee', color: '#666', border: 'none', borderRadius: '20px', cursor: 'pointer', fontWeight: 'normal' }}
+                            >
+                                ยกเลิก
+                            </button>
+                            <button 
+                                onClick={modalConfig.onConfirm}
+                                style={{ padding: '10px 25px', background: '#ff4d4d', color: 'white', border: 'none', borderRadius: '20px', cursor: 'pointer', fontWeight: 'normal' }}
+                            >
+                                ยืนยัน
+                            </button>
                         </div>
-                    )}
+                    </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
-                    <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} style={{ display: 'none' }} />
-                    <p style={{ margin: 0, color: '#888', fontSize: '0.9rem' }}>คลิกที่รูปเพื่อเปลี่ยนหน้าปก</p>
+            )}
+
+            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                <div style={{ background: '#ebebeb', borderRadius: '30px', padding: '40px', display: 'flex', gap: '40px', marginBottom: '30px', position: 'relative' }}>
+                    <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{ width: '280px', height: '400px', background: 'white', borderRadius: '20px', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', flexShrink: 0 }}
+                    >
+                        {coverPreview ? (
+                            <img src={coverPreview} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Preview" /> 
+                        ) : currentCoverUrl ? (
+                            <NovelImage src={currentCoverUrl} style={{ width: '100%', height: '100%' }} />
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#000' }}>เพิ่มรูปหน้าปก</div>
+                        )}
+                        <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} style={{ display: 'none' }} />
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', color: '#000', fontWeight: 'normal', marginBottom: '5px' }}>ชื่อเรื่อง</label>
+                            <input 
+                                type="text" 
+                                value={title} 
+                                onChange={e => setTitle(e.target.value)} 
+                                style={{ width: '100%', padding: '12px', borderRadius: '15px', border: 'none', fontSize: '20px', color: '#000', fontWeight: 'normal', background: '#fcfcfc' }} 
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', color: '#000', fontWeight: 'normal', marginBottom: '5px' }}>หมวดหมู่</label>
+                            <select 
+                                value={category} 
+                                onChange={e => setCategory(e.target.value)} 
+                                style={{ width: '100%', padding: '10px', borderRadius: '12px', border: 'none', background: '#fcfcfc', color: '#000', fontWeight: 'normal' }}
+                            >
+                                {categoriesList.length > 0 ? (
+                                    categoriesList.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))
+                                ) : (
+                                    <option value="">กำลังโหลดหมวดหมู่...</option>
+                                )}
+                            </select>
+                        </div>
+
+                        <div style={{ background: '#f9f9f9', borderRadius: '25px', padding: '20px', border: 'none', minHeight: '220px', display: 'flex', flexDirection: 'column' }}>
+                            <h3 style={{ color: '#000', margin: '0 0 10px 0', fontSize: '18px', fontWeight: 'normal' }}>เรื่องย่อ</h3>
+                            <textarea 
+                                value={description} 
+                                onChange={e => setDescription(e.target.value)} 
+                                style={{ 
+                                    flex: 1, 
+                                    width: '100%', 
+                                    minHeight: '150px',
+                                    padding: '15px', 
+                                    borderRadius: '15px', 
+                                    border: '1px solid #e0e0e0', 
+                                    fontSize: '16px', 
+                                    color: '#000', 
+                                    background: '#fff', 
+                                    resize: 'vertical', 
+                                    boxSizing: 'border-box', 
+                                    fontFamily: 'inherit',
+                                    outline: 'none'
+                                }} 
+                                placeholder="เพิ่มเรื่องย่อ..."
+                            />
+                        </div>
+                    </div>
+
                     {coverFile && (
-                        <button onClick={handleUploadCover} disabled={isUploading} style={{ padding: '10px 30px', background: isUploading ? '#aaa' : '#ff7b00', color: 'white', border: 'none', borderRadius: '30px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}>
-                            {isUploading ? "⏳ กำลังอัปโหลดรูปภาพ..." : "ยืนยันเปลี่ยนหน้าปก"}
+                        <button onClick={handleUploadCover} style={{ position: 'absolute', bottom: '20px', left: '40px', padding: '10px 25px', background: '#bc7df2', color: 'white', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'normal' }}>
+                            {isUploading ? "กำลังอัปโหลด..." : "บันทึกรูปหน้าปก"}
                         </button>
                     )}
                 </div>
-            </div>
 
-            {/* General Info Section */}
-            <div style={{ background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: '30px' }}>
-                <h3 style={{ marginTop: 0, borderBottom: '1px solid #eee', paddingBottom: '15px', color:'#333', fontSize: '20px' }}>ข้อมูลทั่วไป</h3>
-                
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color:'#555'}}>ชื่อเรื่อง <span style={{color: 'red'}}>*</span></label>
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} style={{ width: '100%', padding: '12px 15px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff' , color:'#333', fontSize: '16px'}} />
-                </div>
-                
-                {/* 🌟 จัด Dropdown หมวดหมู่และสถานะให้อยู่คู่กัน[cite: 20] */}
-                <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color:'#555' }}>หมวดหมู่</label>
-                        <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '12px 15px', border: '1px solid #ddd', borderRadius: '8px' , background: '#fff' , color:'#333', fontSize: '16px'}}>
-                            {categoriesList.length > 0 ? (
-                                categoriesList.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))
-                            ) : (
-                                <option value="General">กำลังโหลดหมวดหมู่...</option>
-                            )}
-                        </select>
-                    </div>
-
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color:'#555' }}>สถานะเนื้อเรื่อง</label>
-                        <select 
-                            value={isCompleted} 
-                            onChange={e => setIsCompleted(Number(e.target.value))} 
-                            style={{ width: '100%', padding: '12px 15px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff' , color:'#333', fontSize: '16px' }}
-                        >
-                            <option value={0}>กำลังแต่ง (Ongoing)</option>
-                            <option value={1}>จบแล้ว (Completed)</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style={{ marginBottom: '40px' }}>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color:'#555' }}>เรื่องย่อ</label>
-                    <RichTextEditor 
-                        value={description} 
-                        onChange={setDescription} 
-                        height="250px" 
-                        placeholder="แก้ไขเรื่องย่อที่นี่..." 
-                    />
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-                    <button 
-                        onClick={handleDeleteManga} 
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#fff0f3', color: '#e11d48', border: '1px solid #ffccd5', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s' }}
-                        onMouseOver={e => e.currentTarget.style.background = '#ffe4e6'}
-                        onMouseOut={e => e.currentTarget.style.background = '#fff0f3'}
-                    >
-                        <Trash2 size={18} /> ลบมังงะเรื่องนี้
+                <Link to={`/manga/${id}/chapters`} style={{ textDecoration: 'none' }}>
+                    <button style={{ width: '100%', padding: '15px', background: '#bc7df2', color: 'white', border: 'none', borderRadius: '40px', fontSize: '18px', fontWeight: 'normal', cursor: 'pointer', marginBottom: '30px' }}>
+                        เพิ่มตอน +
                     </button>
-                    
-                    <button 
-                        onClick={handleSaveDetails} 
-                        style={{ padding: '12px 35px', background: '#9b67bd', color: 'white', border: 'none', borderRadius: '30px', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(155, 103, 189, 0.4)', transition: '0.2s' }}
-                    >
-                        บันทึกการเปลี่ยนแปลง
-                    </button>
-                </div>
-            </div>
+                </Link>
 
-            {/* Chapters Section */}
-            <div style={{ background: 'white', padding: '30px', borderRadius: '15px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', marginBottom: '30px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '20px' }}>
-                    <h3 style={{ margin: 0, color: '#333', fontSize: '20px' }}>สารบัญตอน</h3>
-                    <Link to={`/manga/${id}/chapters`}>
-                        <button style={{ padding: '10px 20px', background: '#ff7b00', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(255, 123, 0, 0.3)' }}>+ อัปโหลดตอนใหม่</button>
-                    </Link>
-                </div>
-                
-                {chapters.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#888', padding: '40px', background: '#fafafa', borderRadius: '10px', border: '1px dashed #ddd' }}>
-                        ยังไม่มีตอนมังงะเลย! คลิกที่ปุ่มด้านบนเพื่อเพิ่มตอนแรก
-                    </div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {chapters.map((ch) => (
-                            <div key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 20px', border: '1px solid #eee', borderRadius: '10px', alignItems: 'center', background: '#fff', transition: '0.2s' }} onMouseOver={e => e.currentTarget.style.borderColor = '#ff7b00'} onMouseOut={e => e.currentTarget.style.borderColor = '#eee'}>
-                                <span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <span style={{ color: '#ff7b00', fontSize: '18px' }}>ตอนที่ {ch.chapter_number}</span> 
-                                    <span style={{ color: '#333' }}>{ch.title}</span>
-                                    {ch.status === 'draft' && <span style={{fontSize: '12px', color: '#888', background: '#eee', padding: '4px 10px', borderRadius: '12px', fontWeight: 'normal'}}>📝 แบบร่าง</span>}
-                                </span>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <Link to={`/manga/${id}/chapter/${ch.id}/edit`}>
-                                        <button style={{ padding: '8px 15px', background: '#fff', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', color: '#555', fontWeight: 'bold', transition: '0.2s' }}>
-                                            แก้ไข
+                <div style={{ background: '#ebebeb', borderRadius: '30px', padding: '15px', marginBottom: '40px' }}>
+                    {chapters.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '40px', color: '#000' }}>ยังไม่มีตอนที่เพิ่มเข้ามา</div>
+                    ) : (
+                        <div style={{ width: '100%' }}>
+                            {chapters.map((ch, index) => (
+                                <div key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 30px', borderBottom: index === chapters.length - 1 ? 'none' : '1px solid #ddd' }}>
+                                    <span style={{ color: '#000', fontWeight: 'normal' }}>
+                                        ตอนที่ {ch.chapter_number} - {ch.title}
+                                        {ch.status === 'draft' && <span style={{ marginLeft: '10px', fontSize: '12px', color: '#888', background: '#fff', padding: '4px 10px', borderRadius: '12px' }}>แบบร่าง</span>}
+                                    </span>
+                                    <div style={{ display: 'flex', gap: '15px' }}>
+                                        <Link to={`/manga/${id}/chapter/${ch.id}/edit`} style={{ padding: '8px 25px', background: '#fcfcfc', color: '#bc7df2', textDecoration: 'none', borderRadius: '15px', fontSize: '14px', border: 'none', fontWeight: 'normal' }}>แก้ไข</Link>
+                                        <button 
+                                            onClick={() => openConfirm("ลบตอนมังงะ", "คุณแน่ใจนะว่าจะลบตอนนี้?", () => executeDeleteChapter(ch.id))} 
+                                            style={{ border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'normal' }}
+                                        >
+                                            ลบ
                                         </button>
-                                    </Link>
-                                    <button 
-                                        onClick={() => handleDeleteChapter(ch.id)} 
-                                        style={{ border: 'none', background: '#fff0f3', color: '#ff4d6d', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s' }}
-                                        onMouseOver={e => e.currentTarget.style.background = '#ffe4e6'}
-                                        onMouseOut={e => e.currentTarget.style.background = '#fff0f3'}
-                                    >
-                                        ลบ
-                                    </button>
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '50px' }}>
+                    <span style={{ color: '#000', fontWeight: 'normal', fontSize: '18px' }}>ตั้งค่า :</span>
+                    <div style={{ background: '#ebebeb', borderRadius: '30px', padding: '20px 40px', display: 'flex', alignItems: 'center', gap: '40px', flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <span style={{ color: '#000', fontWeight: 'normal' }}>เผยแพร่</span>
+                            <div onClick={() => setIsPublished(!isPublished)} style={{ width: '50px', height: '26px', background: isPublished ? '#bc7df2' : '#bbb', borderRadius: '13px', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                                <div style={{ width: '20px', height: '20px', background: 'white', borderRadius: '50%', position: 'absolute', top: '3px', left: isPublished ? '27px' : '3px', transition: '0.3s' }} />
                             </div>
-                        ))}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <span style={{ color: '#000', fontWeight: 'normal' }}>สถานะจบ</span>
+                            <div onClick={() => setIsCompleted(isCompleted === 1 ? 0 : 1)} style={{ width: '50px', height: '26px', background: isCompleted === 1 ? '#bc7df2' : '#bbb', borderRadius: '13px', position: 'relative', cursor: 'pointer', transition: '0.3s' }}>
+                                <div style={{ width: '20px', height: '20px', background: 'white', borderRadius: '50%', position: 'absolute', top: '3px', left: isCompleted === 1 ? '27px' : '3px', transition: '0.3s' }} />
+                            </div>
+                            <span style={{ color: isCompleted === 1 ? '#bc7df2' : '#000', fontSize: '14px', fontWeight: 'normal' }}>{isCompleted === 1 ? 'จบแล้ว' : 'ยังไม่จบ'}</span>
+                        </div>
+
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '15px' }}>
+                            <button 
+                                onClick={() => openConfirm("ลบมังงะเรื่องนี้?", "คุณแน่ใจหรือไม่ที่จะลบข้อมูลทั้งหมดถาวร?", executeDeleteManga)} 
+                                style={{ padding: '10px 20px', background: '#ff4d4d', color: 'white', border: 'none', borderRadius: '25px', cursor: 'pointer', fontSize: '14px', fontWeight: 'normal' }}
+                            >
+                                ลบเรื่องนี้
+                            </button>
+                            <button onClick={() => navigate('/dashborad')} style={{ padding: '10px 25px', background: '#888', color: 'white', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'normal' }}>ยกเลิก</button>
+                            <button onClick={handleSaveDetails} style={{ padding: '10px 35px', background: '#bc7df2', color: 'white', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'normal' }}>บันทึกข้อมูล</button>
+                        </div>
                     </div>
-                )}
+                </div>
+
             </div>
 
-            {/* Notification Toast */}
             {statusMsg && (
-                <div style={{ 
-                    position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', 
-                    padding: '15px 30px', background: statusMsg.includes('✅') ? '#28a745' : statusMsg.includes('⏳') ? '#17a2b8' : '#dc3545', 
-                    color: 'white', borderRadius: '30px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', zIndex: 1000, fontWeight: 'bold', fontSize: '16px' 
-                }}>
+                <div style={{ position: 'fixed', bottom: '30px', right: '30px', padding: '15px 35px', background: statusMsg.includes('สำเร็จ') ? '#28a745' : '#333', color: 'white', borderRadius: '15px', zIndex: 1000, fontWeight: 'normal' }}>
                     {statusMsg}
                 </div>
             )}

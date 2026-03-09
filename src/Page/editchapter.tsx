@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ChevronLeft, Globe, FileEdit } from 'lucide-react'; // 🌟 เพิ่ม Icon
+import { ChevronLeft, Globe, FileEdit, CheckCircle2 } from 'lucide-react'; 
 import { API_URL } from "../client"; 
 import { RichTextEditor } from "../components/RichtextEditor";
 
@@ -13,13 +13,16 @@ export function EditChapterPage() {
     const [statusMsg, setStatusMsg] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // 🌟 State สำหรับควบคุมการแสดงผล Popup
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [savedStatus, setSavedStatus] = useState<'published' | 'draft'>('draft');
 
     useEffect(() => {
         const fetchChapterData = async () => {
             if (!id || !chapterId) return;
             try {
                 const token = localStorage.getItem('token');
-                
                 const novelRes = await fetch(`${API_URL}/api/protected/novels/${id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -39,7 +42,6 @@ export function EditChapterPage() {
                         setContent(cData.chapter.content); 
                     }
                 } else { 
-                    alert("ไม่พบข้อมูลตอนนิยาย");
                     navigate(`/novel/${id}/edit`); 
                 }
             } catch (err) {
@@ -52,7 +54,6 @@ export function EditChapterPage() {
         fetchChapterData();
     }, [id, chapterId, navigate]);
 
-    // 🌟 รับค่า targetStatus จากปุ่มที่กด (draft หรือ published)
     const handleUpdate = async (targetStatus: 'published' | 'draft', e: React.MouseEvent) => {
         e.preventDefault();
         if (!title || !content || content === '<p><br></p>') {
@@ -70,13 +71,13 @@ export function EditChapterPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}` 
                 },
-                // 🌟 ส่ง status ไปด้วย
                 body: JSON.stringify({ title, content, status: targetStatus })
             });
 
             if (res.ok) { 
-                alert(`✅ บันทึกเป็น "${targetStatus === 'draft' ? 'แบบร่าง' : 'เผยแพร่'}" สำเร็จ!`); 
-                navigate(`/dashborad`); 
+                // 🌟 เมื่อสำเร็จ ให้เปิด Modal แทนการใช้ alert
+                setSavedStatus(targetStatus);
+                setShowSuccessModal(true);
             } else { 
                 const data = await res.json() as any;
                 setStatusMsg(`❌ อัปเดตไม่สำเร็จ: ${data.error || 'เกิดข้อผิดพลาด'}`); 
@@ -92,13 +93,7 @@ export function EditChapterPage() {
     if (isLoading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#9b67bd', fontSize: '1.2rem' }}>⏳ กำลังโหลดข้อมูลตอน...</div>;
 
     return (
-        <div style={pageContainer}>
-            <div style={headerNav}>
-                <button type="button" onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
-            </div>
-            
+        <div style={pageContainer}>           
             <div style={mainContent}>
                 <div style={sectionWhite}>
                     <h3 style={{ margin: '0 0 20px 0', color: '#666', fontSize: '1.2rem' }}>
@@ -141,7 +136,6 @@ export function EditChapterPage() {
                             ยกเลิก
                         </Link>
                         
-                        {/* 🌟 2 ปุ่ม แบบร่าง กับ เผยแพร่ */}
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <button 
                                 type="button" 
@@ -164,13 +158,34 @@ export function EditChapterPage() {
                     </div>
                 </div>
             </div>
+
+            {/* 🌟 Custom Success Modal (ป๊อปอัพ) */}
+            {showSuccessModal && (
+                <div style={modalOverlay}>
+                    <div style={modalContent}>
+                        <div style={{ marginBottom: '20px' }}>
+                            <CheckCircle2 size={80} color="#bc7df2" />
+                        </div>
+                        <h2 style={{ margin: '0 0 10px 0', color: '#333' }}>บันทึกสำเร็จ!</h2>
+                        <p style={{ color: '#666', marginBottom: '30px', fontSize: '1.1rem' }}>
+                            ตอนนิยายของคุณถูกบันทึกเป็น <br/>
+                            <strong style={{ color: '#bc7df2' }}>"{savedStatus === 'draft' ? 'แบบร่าง' : 'เผยแพร่'}"</strong> เรียบร้อยแล้ว
+                        </p>
+                        <button 
+                            onClick={() => navigate('/dashborad')}
+                            style={{ ...btnPurple(false), width: '100%' }}
+                        >
+                            ตกลง
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
+// --- Styles ---
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', padding: '40px 20px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
-const headerNav = { maxWidth: '1000px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
 const mainContent = { maxWidth: '1000px', margin: '0 auto' };
 const sectionWhite = { backgroundColor: '#fff', padding: '40px', borderRadius: '25px', border: '1px solid #f0f0f0', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' };
 const titleRow = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' };
@@ -186,3 +201,23 @@ const btnPurple = (isLoading: boolean): React.CSSProperties => ({
     fontWeight: 'bold', fontSize: '16px', 
     boxShadow: isLoading ? 'none' : '0 4px 15px rgba(188, 125, 242, 0.4)', transition: '0.2s' 
 });
+
+// 🌟 Modal Styles
+const modalOverlay: React.CSSProperties = {
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    display: 'flex', justifyContent: 'center', alignItems: 'center',
+    zIndex: 1000,
+    backdropFilter: 'blur(4px)' // ทำให้พื้นหลังเบลอสวยๆ
+};
+
+const modalContent: React.CSSProperties = {
+    backgroundColor: '#fff',
+    padding: '40px',
+    borderRadius: '30px',
+    textAlign: 'center',
+    width: '90%',
+    maxWidth: '400px',
+    boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+    animation: 'modalFadeIn 0.3s ease-out'
+};

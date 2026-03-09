@@ -8,7 +8,7 @@ export function CreateNovel() {
     const navigate = useNavigate();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState(""); // ปล่อยว่างไว้ก่อน
+    const [category, setCategory] = useState(""); 
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [coverPreview, setCoverPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -16,7 +16,7 @@ export function CreateNovel() {
     const [errorMsg, setErrorMsg] = useState("");
     const [statusMsg, setStatusMsg] = useState("");
 
-    // 🌟 State เก็บรายการหมวดหมู่ที่ดึงมาจาก DB
+    // 🌟 State เก็บรายการหมวดหมู่ที่ดึงมาจากฐานข้อมูล (ฟังก์ชันเดิมที่ต้องรักษาไว้)
     const [categoriesList, setCategoriesList] = useState<string[]>([]);
 
     // 🌟 ดึงหมวดหมู่ตอนเปิดหน้า
@@ -46,6 +46,7 @@ export function CreateNovel() {
         }
     };
 
+    // 🌟 ฟังก์ชันการสร้างนิยาย (ห้ามแก้ตามคำสั่ง)
     const handleCreate = async (saveAsDraft: boolean) => {
         if (!title.trim()) return setErrorMsg("กรุณากรอกชื่อเรื่อง");
         setIsLoading(true); 
@@ -83,16 +84,11 @@ export function CreateNovel() {
 
     return (
         <div style={pageContainer}>
-            <div style={headerNav}>
-                <button type="button" onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
-            </div>
             
             <div style={mainContent}>
                 <div style={sectionWhite}>
                     <div style={flexRow}>
-                        
+                        {/* ส่วนอัปโหลดรูปปก (UI จาก Test) */}
                         <div style={{ position: 'relative' }}>
                             <div 
                                 style={{
@@ -138,15 +134,21 @@ export function CreateNovel() {
                                 <select 
                                     value={category} 
                                     onChange={(e) => setCategory(e.target.value)} 
-                                    style={{...textInput, appearance: 'auto'}}
+                                    style={{
+                                        ...textInput, 
+                                        width: '100%',
+                                        appearance: 'auto',
+                                        paddingRight: '40px',
+                                        color: '#333',
+                                        cursor: 'pointer'
+                                    }}
                                 >
-                                    {/* 🌟 ดึงข้อมูลจาก State มาลูป */}
                                     {categoriesList.length > 0 ? (
                                         categoriesList.map(cat => (
                                             <option key={cat} value={cat}>{cat}</option>
                                         ))
                                     ) : (
-                                        <option value="General">กำลังโหลดหมวดหมู่...</option>
+                                        <option value="">กำลังโหลดหมวดหมู่...</option>
                                     )}
                                 </select>
                             </div>
@@ -167,9 +169,10 @@ export function CreateNovel() {
 
                     {errorMsg && <div style={errorMessage}>❌ {errorMsg}</div>}
 
+                    {/* ส่วนแถบปุ่มด้านล่าง (แก้ไขเพื่อป้องกันตัวหนังสือเรียงแนวตั้งตามรูปภาพ) */}
                     <div style={statusRowContainer}>
                         <div style={statusWhiteCard}>
-                            <div style={{ flex: 1, fontSize: '14px', color: '#888' }}>
+                            <div style={statusTextInfo}>
                                 เลือก "บันทึกเป็นร่าง" ถ้ายังไม่อยากให้ใครเห็นผลงาน
                             </div> 
                             <div style={actionButtons}>
@@ -199,9 +202,9 @@ export function CreateNovel() {
     );
 }
 
+// --- สไตล์ (CSS-in-JS) ดึงมาจากไฟล์ Test และปรับปรุงส่วนที่พัง ---
+
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif", padding: '20px' };
-const headerNav = { maxWidth: '900px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
 const mainContent = { maxWidth: '900px', margin: '0 auto' };
 const sectionWhite = { backgroundColor: '#fff', padding: '30px', borderRadius: '25px', border: '1px solid #f0f0f0', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' };
 const flexRow = { display: 'flex', gap: '40px' };
@@ -212,10 +215,21 @@ const uploadHint = { color: '#bc7df2', fontSize: '14px', fontWeight: 'bold' };
 const inputArea = { flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '20px' };
 const fieldGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
 const purpleLabel = { color: '#bc7df2', fontWeight: 'bold', fontSize: '18px' };
-const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px', color: '#333' };
+
+// ใช้สีพื้นหลังจากไฟล์ Test (#f9f9f9)
+const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px', color: '#333', backgroundColor: '#f9f9f9' };
+
 const errorMessage: React.CSSProperties = { color: '#ff4d4f', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' };
-const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '30px' };
-const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '25px', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' };
-const actionButtons = { display: 'flex', gap: '15px', alignItems: 'center' };
-const btnOutline: React.CSSProperties = { padding: '12px 25px', borderRadius: '15px', border: '2px solid #ddd', backgroundColor: '#fff', color: '#666', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' };
-const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '12px 30px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });
+
+// ระยะห่าง marginTop: '60px' ตามไฟล์ Test
+const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '60px' };
+const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '25px', padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' };
+
+// ป้องกันตัวอักษรบีบตัว (แก้ปัญหาตามรูปภาพ)
+const statusTextInfo: React.CSSProperties = { flex: 1, fontSize: '14px', color: '#888', whiteSpace: 'normal', minWidth: '200px' };
+
+const actionButtons = { display: 'flex', gap: '15px', alignItems: 'center', justifyContent: 'flex-end' };
+const btnOutline: React.CSSProperties = { padding: '12px 25px', borderRadius: '15px', border: '1.5px solid #eee', backgroundColor: '#fff', color: '#666', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' };
+
+// ปุ่มสีม่วงสไตล์ไฟล์ Test
+const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '12px 35px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });

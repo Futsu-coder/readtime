@@ -16,7 +16,7 @@ export function CreateMangaPage() {
     const [errorMsg, setErrorMsg] = useState("");
     const [statusMsg, setStatusMsg] = useState("");
 
-    // 🌟 State เก็บรายการหมวดหมู่ที่ดึงมาจาก DB
+    // 🌟 คงฟังก์ชันดึงหมวดหมู่จาก DB ไว้ (จากไฟล์หลัก)
     const [categoriesList, setCategoriesList] = useState<string[]>([]);
 
     useEffect(() => {
@@ -45,6 +45,7 @@ export function CreateMangaPage() {
          }
     };
 
+    // 🌟 คง Logic การสร้างมังงะ (Draft/Publish) ไว้เหมือนเดิมเป๊ะ
     const handleCreate = async (saveAsDraft: boolean) => {
         if (!title.trim()) return setErrorMsg("กรุณากรอกชื่อเรื่อง");
         setIsLoading(true); 
@@ -79,12 +80,11 @@ export function CreateMangaPage() {
 
     return (
         <div style={pageContainer}>
+            {/* Header จากไฟล์หลัก (มีปุ่มย้อนกลับ) */}
             <div style={headerNav}>
-                <button type="button" onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
             </div>
 
+            {/* Main Content ใช้โครงสร้าง layout จากไฟล์ Test */}
             <div style={mainContent}>
                 <div style={sectionWhite}>
                     <div style={flexRow}>
@@ -95,7 +95,8 @@ export function CreateMangaPage() {
                                     backgroundImage: coverPreview ? `url(${coverPreview})` : 'none',
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
-                                    border: coverPreview ? 'none' : '2px dashed #eee'
+                                    // ใช้สีเส้นประจากไฟล์ Test
+                                    border: coverPreview ? 'none' : '2px dashed #bc7df2'
                                 }} 
                                 onClick={() => fileInputRef.current?.click()}
                             >
@@ -131,9 +132,17 @@ export function CreateMangaPage() {
                                 <select 
                                     value={category} 
                                     onChange={(e) => setCategory(e.target.value)} 
-                                    style={{...textInput, appearance: 'auto', color: '#333'}}
+                                    // ปรับ Style Select ตามไฟล์ Test
+                                    style={{
+                                        ...textInput, 
+                                        width: '100%', 
+                                        appearance: 'auto', 
+                                        paddingRight: '40px',
+                                        color: '#333', 
+                                        cursor: 'pointer'
+                                    }}
                                 >
-                                    {/* 🌟 ลูปหมวดหมู่จาก Database */}
+                                    {/* ลูปหมวดหมู่จาก DB (Logic เดิม) */}
                                     {categoriesList.length > 0 ? (
                                         categoriesList.map(cat => (
                                             <option key={cat} value={cat}>{cat}</option>
@@ -146,6 +155,7 @@ export function CreateMangaPage() {
                         </div>
                     </div>
                 </div>
+
                 <div style={{...sectionWhite, marginTop: '20px'}}>
                     <label style={purpleLabel}>เพิ่มเนื้อเรื่องย่อ</label>
                     <div style={{ marginTop: '10px' }}>
@@ -156,7 +166,10 @@ export function CreateMangaPage() {
                             placeholder="เริ่มเขียนเนื้อเรื่องย่อของคุณ..."
                         />
                     </div>
+                    
                     {errorMsg && <div style={errorMessage}>❌ {errorMsg}</div>}
+
+                    {/* ปุ่มกด Action - ใช้ UI Card และ Button Layout จากไฟล์ Test แต่คง Logic handleCreate(true/false) ไว้ */}
                     <div style={statusRowContainer}>
                         <div style={statusWhiteCard}>
                             <div style={{ flex: 1, fontSize: '14px', color: '#888' }}>
@@ -189,9 +202,9 @@ export function CreateMangaPage() {
     );
 }
 
+// --- Styles (ผสมผสานระหว่างไฟล์หลัก และ Test) ---
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif", padding: '20px' };
 const headerNav = { maxWidth: '900px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
 const mainContent = { maxWidth: '900px', margin: '0 auto' };
 const sectionWhite = { backgroundColor: '#fff', padding: '30px', borderRadius: '20px', border: '1px solid #f0f0f0', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' };
 const flexRow = { display: 'flex', gap: '40px' };
@@ -202,11 +215,17 @@ const uploadHint = { color: '#bc7df2', fontSize: '14px', fontWeight: 'bold' };
 const inputArea = { flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '20px' };
 const fieldGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
 const purpleLabel = { color: '#bc7df2', fontWeight: 'bold', fontSize: '18px' };
-const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px' };
+
+// ใช้ Style textInput จากไฟล์ Test (มีสีพื้นหลัง f9f9f9)
+const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px', color: '#333', backgroundColor: '#f9f9f9' };
 
 const errorMessage: React.CSSProperties = { color: '#ff4d4f', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' };
 const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '30px' };
 const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '20px', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' };
 const actionButtons = { display: 'flex', gap: '15px', alignItems: 'center' };
+
+// ปุ่ม Outline (บันทึกร่าง)
 const btnOutline: React.CSSProperties = { padding: '12px 25px', borderRadius: '15px', border: '2px solid #ddd', backgroundColor: '#fff', color: '#666', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' };
+
+// ปุ่ม Purple (เผยแพร่) ปรับ padding/style ตามไฟล์ Test
 const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '12px 30px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });

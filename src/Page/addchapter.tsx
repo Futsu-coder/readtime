@@ -61,7 +61,7 @@ export function AddChapterPage() {
         setStatus('กำลังบันทึกตอนใหม่...');
         try {
             const token = localStorage.getItem('token');
-            const targetStatus = isPublished ? 'published' : 'draft'; // 🌟 ดึงค่าจากสวิตช์
+            const targetStatus = isPublished ? 'published' : 'draft'; // 🌟 ดึงค่าจากสวิตช์ (Logic เดิม)
 
             const res = await client.api.protected.novels[':id'].chapters.$post(
                 { 
@@ -90,10 +90,8 @@ export function AddChapterPage() {
 
     return (
         <div style={pageContainer}>
+            {/* UI ที่มีใน addchapter แต่ไม่มีใน Test ถูกเก็บไว้ */}
             <div style={headerNav}>
-                <button onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
             </div>
             <div style={mainContent}>
                 <div style={sectionWhite}>
@@ -102,7 +100,7 @@ export function AddChapterPage() {
                         <span style={chapterLabel}>ชื่อตอน</span>
                         <input 
                             type="text" 
-                            placeholder="เช่น ตอนที่ 1: จุดเริ่มต้น"
+                            placeholder="เช่น ตอนที่ 0: prolough"
                             value={title} 
                             onChange={(e) => setTitle(e.target.value)}
                             style={titleInput} 
@@ -184,15 +182,18 @@ export function AddChapterPage() {
     );
 }
 
+// Styles ที่มาจาก Test_addchapter
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', padding: '40px 20px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
+
+// Styles ส่วน Header และ Back Button ที่เก็บไว้จากไฟล์หลัก
 const headerNav = { maxWidth: '1000px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
+
 const mainContent = { maxWidth: '1000px', margin: '0 auto' };
 const sectionWhite = { backgroundColor: '#fff', padding: '40px', borderRadius: '25px', border: '1px solid #f0f0f0', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' };
 const titleRow = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' };
 const chapterLabel = { color: '#bc7df2', fontSize: '20px', fontWeight: 'bold' };
 const titleInput: React.CSSProperties = { flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid #bfbfbf', fontSize: '16px', outline: 'none' , color:'black' , background:'white' };
-const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '30px' };
+const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '60px' }; // เปลี่ยนเป็น 60px ตามไฟล์ Test
 const statusTitle = { color: '#bc7df2', fontWeight: 'bold', fontSize: '20px' };
 const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fcfcfc', border: '1px solid #eee', borderRadius: '25px', padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const toggleSection = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };

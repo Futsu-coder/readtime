@@ -13,7 +13,9 @@ export function Login() {
     const [password, setPassword] = useState('')
     const [message, setMessage] = useState('')
     const [loading, setLoading] = useState(false)
+    const [showSuccess, setShowSuccess] = useState(false) 
 
+    // 🌟 แก้ไขฟังก์ชันแล้ว: เอา Alert ออก เปลี่ยนมาเรียกใช้ UI Popup แทน 🌟
     const handleLogin = async () => {
         setLoading(true)
         setMessage('')
@@ -29,8 +31,14 @@ export function Login() {
             const data = await res.json() as ApiRespone
             if (res.ok && data.token) {
                 localStorage.setItem('token', data.token)
-                alert('ยินดีต้อนรับครับ')
-                window.location.href = '/'
+                
+                // เปิด UI Popup สำเร็จ
+                setShowSuccess(true)
+                
+                // หน่วงเวลา 1.5 วินาทีให้ผู้ใช้เห็น Popup ก่อนเปลี่ยนหน้าไปหน้าแรก
+                setTimeout(() => {
+                    window.location.href = '/'
+                }, 1500)
             }
             else {
                 setMessage(`${data.error || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'}`)
@@ -44,9 +52,16 @@ export function Login() {
     }
 
     // --- Styles ---
+    const pageWrapperStyle = {
+        minHeight: '100vh',
+        width: '100%',
+        backgroundColor: '#FFFFFF', 
+        paddingTop: '80px' 
+    }
+
     const containerStyle = {
         maxWidth: '450px',
-        margin: '80px auto',
+        margin: '0 auto', 
         padding: '20px',
         textAlign: 'center' as const,
         fontFamily: "'Inter', 'Kanit', sans-serif",
@@ -55,7 +70,7 @@ export function Login() {
     const logoStyle = {
         fontSize: '32px',
         fontWeight: 'bold',
-        color: '#A865B5', // สีม่วงตามโลโก้
+        color: '#A865B5',
         marginBottom: '5px',
         display: 'flex',
         alignItems: 'center',
@@ -97,7 +112,8 @@ export function Login() {
         background: 'transparent',
         fontSize: '16px',
         outline: 'none',
-        padding: '5px 0'
+        padding: '5px 0',
+        color: '#333' 
     }
 
     const loginButtonStyle = {
@@ -127,51 +143,81 @@ export function Login() {
         cursor: 'pointer'
     }
 
+    const modalOverlayStyle = {
+        position: 'fixed' as const,
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        animation: 'fadeIn 0.3s ease'
+    }
+
+    const modalContentStyle = {
+        background: 'white',
+        padding: '40px',
+        borderRadius: '20px',
+        textAlign: 'center' as const,
+        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+        minWidth: '280px'
+    }
+
     return (
-        <div style={containerStyle}>
-            {/* Logo Section */}
-            <div style={logoStyle}>
-                READTIME <span style={{ fontSize: '24px' }}>✎</span>
-            </div>
-            <h3 style={subTitleStyle}>Log in</h3>
-            <p style={descriptionStyle}>เข้าสู่ระบบด้วยสมาชิก ReadTime!</p>
+        <div style={pageWrapperStyle}>
+            <div style={containerStyle}>
+                <div style={logoStyle}>
+                    READTIME <span style={{ fontSize: '24px' }}>✎</span>
+                </div>
+                <h3 style={subTitleStyle}>Log in</h3>
+                <p style={descriptionStyle}>เข้าสู่ระบบด้วยสมาชิก ReadTime!</p>
 
-            {/* Input Fields */}
-            <div style={inputGroupStyle}>
-                <label style={labelStyle}>บัญชี</label>
-                <input 
-                    value={username} 
-                    onChange={e => setUsername(e.target.value)} 
-                    style={inputStyle} 
-                />
-            </div>
+                <div style={inputGroupStyle}>
+                    <label style={labelStyle}>บัญชี</label>
+                    <input 
+                        value={username} 
+                        onChange={e => setUsername(e.target.value)} 
+                        style={inputStyle} 
+                    />
+                </div>
 
-            <div style={inputGroupStyle}>
-                <label style={labelStyle}>รหัสผ่าน</label>
-                <input 
-                    type="password" 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
-                    style={inputStyle} 
-                />
-            </div>
+                <div style={inputGroupStyle}>
+                    <label style={labelStyle}>รหัสผ่าน</label>
+                    <input 
+                        type="password" 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                        style={inputStyle} 
+                    />
+                </div>
 
-            {/* Error Message */}
-            {message && <p style={{ color: 'red', fontSize: '14px', margin: '10px 0' }}>{message}</p>}
+                {message && <p style={{ color: 'red', fontSize: '14px', margin: '10px 0' }}>{message}</p>}
 
-            {/* Login Button */}
-            <button 
-                onClick={handleLogin} 
-                disabled={loading} 
-                style={loginButtonStyle}
-            >
-                {loading ? 'กำลังตรวจสอบ...' : 'Log in'}
-            </button>
+                <button 
+                    onClick={handleLogin} 
+                    disabled={loading} 
+                    style={loginButtonStyle}
+                >
+                    {loading ? 'กำลังตรวจสอบ...' : 'Log in'}
+                </button>
 
-            {/* Footer Links */}
-            <div style={footerLinksStyle}>
-                <Link to="/forgetpassword" style={linkActionStyle}>ลืมรหัสผ่าน?</Link>
-                <Link to="/register" style={linkActionStyle}>สมัครสมาชิก</Link>
+                <div style={footerLinksStyle}>
+                    <Link to="/forgetpassword" style={linkActionStyle}>ลืมรหัสผ่าน?</Link>
+                    <Link to="/register" style={linkActionStyle}>สมัครสมาชิก</Link>
+                </div>
+
+                {/* 🌟 Success Popup 🌟 */}
+                {showSuccess && (
+                    <div style={modalOverlayStyle}>
+                        <div style={modalContentStyle}>
+                            <h2 style={{ color: '#9163B6', margin: '0 0 10px 0' }}>สำเร็จ!</h2>
+                            <p style={{ color: '#555' }}>ยินดีต้อนรับเข้าสู่ระบบ</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

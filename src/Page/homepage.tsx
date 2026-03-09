@@ -21,6 +21,20 @@ export function HomePage() {
     const [recentHistory, setRecentHistory] = useState<any[]>([]);
     const isLoggedIn = !!localStorage.getItem('token');
 
+    // 🌟 ระบบสีของหมวดหมู่จากไฟล์ Test
+    const genreColors: { [key: string]: string } = {
+        'Action': '#B5C4FF',     
+        'Romance': '#F7A8E0',     
+        'Fantasy': '#D4B5FF',     
+        'Horror': '#F99F95',      
+        'Comedy': '#E4EF8B',      
+        'Adventure': '#8CC1F7',  
+        'Drama': '#F7E18C',       
+        'General': '#B2F2D0',     
+        'Slice of Life': '#F4B183',
+        'Isekai': '#D291E4'      
+    };
+
     useEffect(() => {
         if (isLoggedIn) {
             const token = localStorage.getItem('token');
@@ -151,13 +165,34 @@ export function HomePage() {
         setActiveGenre('All');
     };
 
+    // 🌟 ฟังก์ชันจัดการสีของปุ่มหมวดหมู่จากไฟล์ Test
+    const getGenreTagStyle = (genre: string, isActive: boolean) => {
+        const baseStyle = isActive ? activeGenreTag : genreTag;
+        
+        // ดึงสีตามหมวดหมู่ ถ้าไม่มีให้ใช้สีเทาอ่อนตามค่าเริ่มต้น
+        const genreColor = genreColors[genre] || '#efefef';
+        
+        let backgroundColor = genreColor;
+        if (genre === 'All' && isActive) {
+            backgroundColor = '#9b67bd'; 
+        }
+
+        const color = (genre === 'All' && isActive) ? 'white' : '#222';
+
+        return {
+            ...baseStyle,
+            backgroundColor: backgroundColor,
+            color: color
+        };
+    };
+
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>กำลังโหลดข้อมูลหนังสือ...</div>;
 
     return (
         <div style={containerStyle}>
             <div style={wideContent}>
                 
-                {/* แบนเนอร์ */}
+                {/* แบนเนอร์ (คงของเดิมไว้เนื่องจากเป็นระบบสไลด์และดึงจาก API) */}
                 {extendedBanners.length > 0 ? (
                     <div ref={scrollRef} style={bannerScrollContainer} onScroll={handleScroll}>
                         {extendedBanners.map((b, index) => (
@@ -177,21 +212,42 @@ export function HomePage() {
 
                 {/* แท็บนิยาย/การ์ตูน */}
                 <div style={tabBar}>
-                    <span style={activeCategory === 'novel' ? activeTab : inactiveTab} onClick={() => handleCategoryToggle('novel')}>นิยาย</span>
-                    <span style={activeCategory === 'manga' ? activeTab : inactiveTab} onClick={() => handleCategoryToggle('manga')}>การ์ตูน</span>
+                    <span 
+                        style={activeCategory === 'novel' ? activeTab : inactiveTab} 
+                        onClick={() => handleCategoryToggle('novel')}
+                    >
+                        นิยาย
+                    </span>
+                    <span 
+                        style={activeCategory === 'manga' ? activeTab : inactiveTab} 
+                        onClick={() => handleCategoryToggle('manga')}
+                    >
+                        การ์ตูน
+                    </span>
                 </div>
 
-                {/* หมวดหมู่ */}
+                {/* หมวดหมู่ (ใช้ UI ตามไฟล์ Test) */}
                 <section style={genreSectionTop}>
-                    <div style={titleGroup}><div style={purpleLine}></div><h3 style={sectionTitle}>หมวดหมู่</h3></div>
+                    <div style={titleGroup}>
+                        <div style={purpleLine}></div>
+                        <h3 style={sectionTitle}>
+                            หมวดหมู่{activeCategory === 'novel' ? 'นิยาย' : activeCategory === 'manga' ? 'การ์ตูน' : 'ทั้งหมด'}
+                        </h3>
+                    </div>
                     <div style={genreList}>
                         {genres.map((genre) => (
-                            <span key={genre} style={activeGenre === genre ? activeGenreTag : genreTag} onClick={() => setActiveGenre(genre)}>{genre}</span>
+                            <span 
+                                key={genre} 
+                                style={getGenreTagStyle(genre, activeGenre === genre)}
+                                onClick={() => setActiveGenre(genre)}
+                            >
+                                {genre}
+                            </span>
                         ))}
                     </div>
                 </section>
 
-                {/* 🌟 ประวัติการอ่าน */}
+                {/* 🌟 ประวัติการอ่าน (คงของเดิมไว้เพราะไม่มีในไฟล์ Test) */}
                 {isLoggedIn && displayedHistory.length > 0 && (
                     <section style={sectionMargin}>
                         <div style={sectionHeader}>
@@ -221,13 +277,26 @@ export function HomePage() {
                     </section>
                 )}
 
-                {/* ผลงานล่าสุด */}
+                {/* ผลงานล่าสุด (ใช้ Header ตามไฟล์ Test) */}
                 <section style={sectionMargin}>
-                    <div style={sectionHeader}><div style={titleGroup}><div style={purpleLine}></div><h3 style={sectionTitle}>ผลงานล่าสุด</h3></div><span style={viewMore}>ดูทั้งหมด {'>'}</span></div>
+                    <div style={sectionHeader}>
+                        <div style={titleGroup}>
+                            <div style={purpleLine}></div>
+                            <h3 style={sectionTitle}>
+                                {activeCategory === 'all' ? 'ผลงานล่าสุด' 
+                                 : activeCategory === 'novel' ? 'Novel / นิยาย' 
+                                 : 'Manga / การ์ตูน'}
+                                {activeGenre !== 'All' && <span style={{ color: '#9b67bd', fontSize: '18px', marginLeft: '10px' }}>({activeGenre})</span>}
+                            </h3>
+                        </div>
+                        <span style={viewMore}>ดูทั้งหมด {'>'}</span>
+                    </div>
                     {displayedWorks.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>ยังไม่มีผลงานในหมวดหมู่นี้ 😅</div>
                     ) : (
-                        <div style={bookGrid}>{displayedWorks.map((work) => (<NovelCard key={`${work.type}-${work.id}`} novel={work} />))}</div>
+                        <div style={bookGrid}>
+                            {displayedWorks.map((work) => (<NovelCard key={`${work.type}-${work.id}`} novel={work} />))}
+                        </div>
                     )}
                 </section>
             </div>
@@ -243,8 +312,16 @@ const activeTab: React.CSSProperties = { color: '#9b67bd', borderBottom: '3px so
 const inactiveTab: React.CSSProperties = { color: '#aaa', paddingBottom: '12px', fontSize: '18px', cursor: 'pointer', transition: '0.2s' };
 const genreSectionTop: React.CSSProperties = { marginBottom: '40px' };
 const genreList: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '20px' };
-const genreTag: React.CSSProperties = { padding: '8px 20px', backgroundColor: '#efefef', borderRadius: '25px', fontSize: '14px', color: '#555', cursor: 'pointer', fontWeight: '500', transition: '0.2s', userSelect: 'none' };
-const activeGenreTag: React.CSSProperties = { ...genreTag, backgroundColor: '#9b67bd', color: 'white' };
+
+// 🌟 อัปเดต CSS ของ Genre จากไฟล์ Test
+const genreTag: React.CSSProperties = { 
+    padding: '8px 20px', borderRadius: '25px', 
+    fontSize: '14px', cursor: 'pointer', fontWeight: '500', transition: '0.2s', userSelect: 'none'
+};
+const activeGenreTag: React.CSSProperties = { 
+    ...genreTag, 
+};
+
 const sectionMargin: React.CSSProperties = { marginBottom: '50px' };
 const sectionHeader: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' };
 const titleGroup: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '12px' };
