@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Play, BookOpen, Heart } from 'lucide-react';
 import { client } from "../client";
 import { NovelImage } from "../components/novelimage";
-import { Flag } from 'lucide-react';
-import { ReportModal } from '../components/ReportModal';
 
 interface Novel {
     id: number;
@@ -40,7 +38,6 @@ export function Noveldetailpage() {
     const [isHover, setIsHover] = useState(false);
 
     const isLoggedIn = !!localStorage.getItem('token');
-    const [showReport, setShowReport] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -192,15 +189,7 @@ export function Noveldetailpage() {
                     )}
                 </div>
             </div>
-            <ReportModal 
-                isOpen={showReport} 
-                onClose={() => setShowReport(false)} 
-                workId={Number(id)} 
-                workType="novel" 
-                chapterTitle={null}
-            />
         </div>
-        
     );
 }
 

@@ -12,12 +12,13 @@ export function CreateMangaChapterPage() {
     const { id } = useParams();
     const navigate = useNavigate();
 
+    // --- State สำหรับ API ---
     const [title, setTitle] = useState('');
     const [chapterNumber, setChapterNumber] = useState('');
     const [pages, setPages] = useState<PageImage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     
-    // 🌟 ค่าเริ่มต้นคือ false = 'แบบร่าง'
+    // --- UI Control States ---
     const [isPublished, setIsPublished] = useState(false);
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -25,12 +26,18 @@ export function CreateMangaChapterPage() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // 🌟 Refs สำหรับระบบ Drag & Drop
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
 
+    // 🌟 ฟังก์ชันจัดการ Drag & Drop
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, position: number) => {
         dragItem.current = position;
-        setTimeout(() => { if (e.target instanceof HTMLElement) { e.target.style.opacity = '0.5'; } }, 0);
+        setTimeout(() => {
+            if (e.target instanceof HTMLElement) {
+                e.target.style.opacity = '0.5';
+            }
+        }, 0);
     };
 
     const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
@@ -38,21 +45,29 @@ export function CreateMangaChapterPage() {
     };
 
     const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
-        if (e.target instanceof HTMLElement) { e.target.style.opacity = '1'; }
+        if (e.target instanceof HTMLElement) {
+            e.target.style.opacity = '1';
+        }
+
         if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
             const _pages = [...pages];
             const draggedItemContent = _pages.splice(dragItem.current, 1)[0];
             _pages.splice(dragOverItem.current, 0, draggedItemContent);
             setPages(_pages);
         }
+        
         dragItem.current = null;
         dragOverItem.current = null;
     };
 
+    // 🌟 ฟังก์ชันจัดการไฟล์
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files && files.length > 0) {
-            const newPages = Array.from(files).map(file => ({ file, preview: URL.createObjectURL(file) }));
+            const newPages = Array.from(files).map(file => ({
+                file,
+                preview: URL.createObjectURL(file)
+            }));
             setPages(prev => [...prev, ...newPages]);
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
