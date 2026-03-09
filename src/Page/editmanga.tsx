@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react"; 
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Trash2 } from "lucide-react"; 
 import { API_URL } from "../client";
 import { NovelImage } from "../components/novelimage"; 
 import { RichTextEditor } from "../components/RichtextEditor";
@@ -12,7 +11,6 @@ interface Manga {
     category: string;
     owner_id: number;
     cover_image?: string | null;
-    is_completed?: number; // 🌟 รับค่าสถานะจบ 0 หรือ 1[cite: 20]
 }
 
 interface MangaChapter {
@@ -20,7 +18,6 @@ interface MangaChapter {
     title: string;
     chapter_number: number;
     created_at: string;
-    status?: string; 
 }
 
 interface MangaResponse {
@@ -33,8 +30,7 @@ export function EditMangaPage() {
     const navigate = useNavigate();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("");
-    const [isCompleted, setIsCompleted] = useState(0); // 🌟 State เก็บสถานะจบเนื้อเรื่อง[cite: 20]
+    const [category, setCategory] = useState("Action");
     const [chapters, setChapters] = useState<MangaChapter[]>([]);
     const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null);
     const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -49,31 +45,18 @@ export function EditMangaPage() {
     const [isCompleted, setIsCompleted] = useState(false);
 
     useEffect(() => {
-        const fetchInitialData = async () => {
+        const fetchManga = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) { navigate('/login'); return; }
-                
-                // 🌟 ดึงหมวดหมู่ทั้งหมดมาก่อน
-                const catRes = await fetch(`${API_URL}/api/public/categories`);
-                if (catRes.ok) {
-                    const catData = await catRes.json();
-                    if (catData.categories) setCategoriesList(catData.categories);
-                }
-
-                // ดึงข้อมูลมังงะ
-                const res = await fetch(`${API_URL}/api/protected/manga/${id}`, {
-                     headers: { Authorization: `Bearer ${token}` }
-                });
-                
+                const res = await fetch(`${API_URL}/api/public/mangas/${id}`);
                 if (res.ok) {
                     const data = await res.json() as MangaResponse;
                     setTitle(data.manga.title);
                     setDescription(data.manga.description || "");
-                    setCategory(data.manga.category || "");
+                    setCategory(data.manga.category || "Action");
                     setCurrentCoverUrl(data.manga.cover_image || null); 
                     setChapters(data.chapters || []);
-                    setIsCompleted(data.manga.is_completed || 0); // 🌟 โหลดค่าจาก DB[cite: 20]
                 } else {
                     navigate('/dashborad');
                 }
@@ -84,7 +67,7 @@ export function EditMangaPage() {
                 setIsLoading(false);
             }
         };
-        if (id) fetchInitialData();
+        if (id) fetchManga();
     }, [id, navigate]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,7 +93,7 @@ export function EditMangaPage() {
 
             const data = await res.json();
             if (res.ok) {
-                setStatusMsg("✅ อัปโหลดหน้าปกสำเร็จ!");
+                setStatusMsg("อัปโหลดหน้าปกสำเร็จ!");
                 setCurrentCoverUrl(data.cover_image); 
                 setCoverFile(null); setCoverPreview(null);
             }
@@ -125,7 +108,7 @@ export function EditMangaPage() {
             const res = await fetch(`${API_URL}/api/protected/manga/${id}`, {
                 method: "PUT",
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ title, description, category, is_completed: isCompleted }) // 🌟 ส่งค่า is_completed ไปบันทึกด้วย[cite: 20]
+                body: JSON.stringify({ title, description, category })
             });
             if (res.ok) setStatusMsg("บันทึกข้อมูลสำเร็จ");
         } catch (err) { console.log(err) }
@@ -133,17 +116,13 @@ export function EditMangaPage() {
     };
 
     const handleDeleteChapter = async (chapterId: number) => {
-        if (!confirm("ต้องการลบตอนนี้ใช่หรือไม่?\n(เมื่อลบแล้วจะไม่สามารถกู้คืนได้)")) return;
+        if (!confirm("ต้องการลบตอนนี้ใช่หรือไม่?")) return;
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/protected/manga/${id}/chapters/${chapterId}`, {
                 method: "DELETE", headers: { Authorization: `Bearer ${token}` }
             });
-            if (res.ok) {
-                setChapters(chapters.filter(ch => ch.id !== chapterId));
-                setStatusMsg("✅ ลบตอนเรียบร้อยแล้ว");
-                setTimeout(() => setStatusMsg(""), 3000);
-            }
+            if (res.ok) setChapters(chapters.filter(ch => ch.id !== chapterId));
         } catch (err) { console.error(err); }
     };
 

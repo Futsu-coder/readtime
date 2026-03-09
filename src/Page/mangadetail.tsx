@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Play, BookOpen, Heart } from 'lucide-react';
 import { API_URL } from "../client"; 
 import { NovelImage } from "../components/novelimage";
-import { Flag } from 'lucide-react';
-import { ReportModal } from '../components/ReportModal';
 
 interface Manga {
     id: number;
@@ -41,7 +39,6 @@ export function MangaDetailPage() {
         } catch { return null; }
     });
     const isLoggedIn = !!localStorage.getItem('token');
-    const [showReport, setShowReport] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -71,25 +68,13 @@ export function MangaDetailPage() {
 
     const handleBookmark = async () => {
         if (!isLoggedIn) return alert("กรุณาเข้าสู่ระบบก่อนเก็บผลงานเข้าชั้น");
-        
-        try {
-            // 🌟 แก้จาก /manga/ เป็น /mangas/ (เติม s)
-            const res = await fetch(`${API_URL}/api/protected/manga/${id}/bookmark`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
-            
-            if (res.ok) {
-                const data = await res.json();
-                setIsBookmarked(data.isBookmarked);
-            } else {
-                // เพิ่ม Error Handling เผื่อไว้ดูว่าเกิดอะไรขึ้น
-                const errorData = await res.json();
-                console.error("Bookmark Error:", errorData);
-                alert("ไม่สามารถเพิ่มเข้าชั้นได้");
-            }
-        } catch (err) {
-            console.error("Fetch Error:", err);
+        const res = await fetch(`${API_URL}/api/protected/manga/${id}/bookmark`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            setIsBookmarked(data.isBookmarked);
         }
     };
 
@@ -192,13 +177,6 @@ export function MangaDetailPage() {
                     )}
                 </div>
             </div>
-            <ReportModal 
-                isOpen={showReport} 
-                onClose={() => setShowReport(false)} 
-                workId={Number(id)} 
-                workType="manga" 
-                chapterTitle={null} // 🌟 หน้าอ่านตอน โยนชื่อตอนเข้าไปด้วยเลย!
-            />
         </div>
     );
 }

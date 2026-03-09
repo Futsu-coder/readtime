@@ -3,8 +3,6 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { client, API_URL } from "../client";
 import { CommentSection } from "../components/comment";
 import 'react-quill-new/dist/quill.snow.css';
-import { Flag } from 'lucide-react';
-import { ReportModal } from '../components/ReportModal';
 
 interface ChapterContent {
     id: number;
@@ -25,7 +23,6 @@ export function Readchapterpage() {
     const [allChapters, setAllChapters] = useState<ChapterItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [showReport, setShowReport] = useState(false);
 
     // จำลองข้อมูลนิยาย (คุณสามารถดึงจาก API มาแทนที่ได้)
     const mockNovelInfo = {
@@ -141,9 +138,6 @@ export function Readchapterpage() {
                     <h1 style={{ color: '#9b59b6', fontSize: '24px', fontWeight: 'normal', margin: '12px 0' }}>{chapter.title}</h1>
                     <div style={{ color: '#888', fontSize: '14px' }}>โดย {mockNovelInfo.author}</div>
                 </div>
-                <button onClick={() => setShowReport(true)} style={{ background: '#fff1f0', border: '1px solid #ffa39e', color: '#e11d48', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }} >
-                    <Flag size={14} /> รายงานตอนนี้
-                </button>
 
                 {/* Story Content */}
                 <div 
@@ -218,13 +212,6 @@ export function Readchapterpage() {
                     </div>
                 )}
             </div>
-            <ReportModal 
-                isOpen={showReport} 
-                onClose={() => setShowReport(false)} 
-                workId={Number(id)} 
-                workType="novel" 
-                chapterTitle={chapter.title}
-            />
         </div>
     );
 }
