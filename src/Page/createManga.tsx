@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../client"; 
 import { RichTextEditor } from "../components/RichtextEditor";
-import { ChevronLeft, Plus, Globe, FileEdit } from 'lucide-react'; 
+import { ChevronLeft, Plus, ChevronDown } from 'lucide-react';
 
 export function CreateMangaPage() {
     const navigate = useNavigate();
@@ -80,9 +80,6 @@ export function CreateMangaPage() {
     return (
         <div style={pageContainer}>
             <div style={headerNav}>
-                <button type="button" onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
             </div>
 
             <div style={mainContent}>
@@ -95,7 +92,7 @@ export function CreateMangaPage() {
                                     backgroundImage: coverPreview ? `url(${coverPreview})` : 'none',
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
-                                    border: coverPreview ? 'none' : '2px dashed #eee'
+                                    border: coverPreview ? 'none' : '2px dashed #bc7df2'
                                 }} 
                                 onClick={() => fileInputRef.current?.click()}
                             >
@@ -129,18 +126,25 @@ export function CreateMangaPage() {
                             <div style={fieldGroup}>
                                 <label style={purpleLabel}>หมวดหมู่</label>
                                 <select 
-                                    value={category} 
-                                    onChange={(e) => setCategory(e.target.value)} 
-                                    style={{...textInput, appearance: 'auto', color: '#333'}}
-                                >
-                                    {/* 🌟 ลูปหมวดหมู่จาก Database */}
-                                    {categoriesList.length > 0 ? (
-                                        categoriesList.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
-                                        ))
-                                    ) : (
-                                        <option value="General">กำลังโหลดหมวดหมู่...</option>
-                                    )}
+                                  value={category} 
+                                   onChange={(e) => setCategory(e.target.value)} 
+                                style={{
+                                        ...textInput, 
+                                        width: '100%', 
+                                        appearance: 'auto', 
+                                        paddingRight: '40px',
+                                        color: '#333', 
+                                        cursor: 'pointer'}}>
+                                     <option value="Action">Action</option>
+                                    <option value="Romance">Romance</option>
+                                    <option value="Fantasy">Fantasy</option>
+                                    <option value="Horror">Horror</option>
+                                    <option value="Comedy">Comedy</option>
+                                    <option value="Adventure">Adventure</option>
+                                    <option value="Drama">Drama</option>
+                                    <option value="General">General</option>
+                                    <option value="Slice of Life">Slice of Life</option>
+                                    <option value="Isekai">Isekai</option>
                                 </select>
                             </div>
                         </div>
@@ -191,7 +195,6 @@ export function CreateMangaPage() {
 
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif", padding: '20px' };
 const headerNav = { maxWidth: '900px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
 const mainContent = { maxWidth: '900px', margin: '0 auto' };
 const sectionWhite = { backgroundColor: '#fff', padding: '30px', borderRadius: '20px', border: '1px solid #f0f0f0', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' };
 const flexRow = { display: 'flex', gap: '40px' };
@@ -202,7 +205,7 @@ const uploadHint = { color: '#bc7df2', fontSize: '14px', fontWeight: 'bold' };
 const inputArea = { flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '20px' };
 const fieldGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
 const purpleLabel = { color: '#bc7df2', fontWeight: 'bold', fontSize: '18px' };
-const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px' };
+const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px', color: '#333',backgroundColor: '#f9f9f9' };
 
 const errorMessage: React.CSSProperties = { color: '#ff4d4f', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' };
 const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '30px' };

@@ -28,8 +28,6 @@ import { EditMangaChapterPage } from "./Page/editchaptermanga";
 
 import { AdminDashboard } from "./Page/admindashboard";
 
-import { API_URL } from "./client"; // 🌟 2. อย่าลืม Import API_URL ให้ตรง Path ด้วยนะครับ
-
 function App() {
   const token = localStorage.getItem('token')
 

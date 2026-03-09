@@ -101,32 +101,32 @@ export function ReadMangaPage() {
     const currentIndex = allChapters.findIndex((c) => c.id === currentIdNum);
     const prevChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : undefined;
     const nextChapter = currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : undefined;
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#555' }}>⏳ กำลังโหลดหน้ากระดาษ...</div>;
+    
+    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#555' }}> กำลังโหลดหน้ากระดาษ...</div>;
     if (error) return <div style={{ textAlign: 'center', color: 'red', marginTop: '50px' }}>❌ {error}</div>;
     if (!chapter) return null;
 
     return (
-        <div style={{ backgroundColor: '#111', minHeight: '100vh', fontFamily: "'Sarabun', sans-serif" }}>
+        <div style={{ backgroundColor: '#ffffff', minHeight: '100vh', fontFamily: "'Sarabun', sans-serif" }}>
             <div style={{ 
                 position: 'sticky', top: 0, zIndex: 50, 
-                background: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(10px)',
-                padding: '15px 20px', borderBottom: '1px solid #333',
+                background: '#ffffff', backdropFilter: 'blur(10px)',
+                padding: '15px 20px', borderBottom: '1px solid #eee', // ปรับเส้นขอบให้เป็นสีอ่อน
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
             }}>
-                <Link to={`/manga/${id}`} style={{ color: '#aaa', textDecoration: 'none', fontWeight: 'bold' }}>
-                    &larr; กลับไปสารบัญ
-                </Link>
-                <div style={{ color: 'white', textAlign: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#ff7b00' }}>
+                {/* ใส่ div เปล่าไว้ด้านซ้ายแทนคำว่า "กลับไปสารบัญ" เพื่อให้ชื่อตอนยังอยู่ตรงกลาง */}
+                <div style={{ width: '100px' }}></div> 
+                
+                <div style={{ color: '#333', textAlign: 'center' }}> {/* ปรับสีตัวอักษรให้เข้มขึ้นเพื่อให้เห็นบนพื้นขาว */}
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#c98bf2' }}>
                         ตอนที่ {chapter.chapter_number}
                     </h3>
-                    <span style={{ fontSize: '0.9rem', color: '#bbb' }}>{chapter.title}</span>
+                    <span style={{ fontSize: '0.9rem', color: '#666' }}>{chapter.title}</span> {/* ปรับสีตัวอักษรรอง */}
                 </div>
-                <button onClick={() => setShowReport(true)} style={{ background: '#fff1f0', border: '1px solid #ffa39e', color: '#e11d48', padding: '6px 12px', borderRadius: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }} >
-                    <Flag size={14} /> รายงานตอนนี้
-                </button>
+                
                 <div style={{ width: '100px' }}></div> 
             </div>
+
             <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
                 {pages.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '100px 20px', color: '#888' }}>
@@ -143,24 +143,25 @@ export function ReadMangaPage() {
                                 width: '100%', 
                                 height: 'auto', 
                                 display: 'block',
-                                backgroundColor: '#222' 
+                                backgroundColor: '#ffffff' // ปรับพื้นหลังรูปเป็นสีขาว
                             }}
                         />
                     ))
                 )}
             </div>
+
             <div style={{ 
                 maxWidth: '800px', margin: '0 auto', padding: '40px 20px', 
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                borderTop: '1px solid #333'
+                borderTop: '1px solid #eee' // ปรับเส้นขอบให้เป็นสีอ่อน
             }}>
                 <button 
                     disabled={!prevChapter}
                     onClick={() => prevChapter && navigate(`/manga/${id}/chapters/${prevChapter.id}`)}
                     style={{ 
                         visibility: prevChapter ? 'visible' : 'hidden', 
-                        padding: '12px 25px', cursor: 'pointer', background: '#333', 
-                        color: 'white', border: 'none', borderRadius: '30px', fontWeight: 'bold'
+                        padding: '12px 25px', cursor: 'pointer', background: '#f5f5f5', // ปรับปุ่มกลับให้สว่าง
+                        color: '#333', border: '1px solid #ddd', borderRadius: '30px', fontWeight: 'bold'
                     }}
                 >
                     &larr; ตอนก่อนหน้า
@@ -171,16 +172,18 @@ export function ReadMangaPage() {
                     onClick={() => nextChapter && navigate(`/manga/${id}/chapters/${nextChapter.id}`)}
                     style={{ 
                         visibility: nextChapter ? 'visible' : 'hidden', 
-                        padding: '12px 25px', cursor: 'pointer', background: '#ff7b00', 
+                        padding: '12px 25px', cursor: 'pointer', background: '#c98bf2', 
                         color: 'white', border: 'none', borderRadius: '30px', fontWeight: 'bold',
-                        boxShadow: '0 4px 15px rgba(255, 123, 0, 0.3)'
+                        boxShadow: '0 4px 15px rgba(201, 139, 242, 0.3)' // ปรับสีเงาให้เข้ากับปุ่มสีม่วง
                     }}
                 >
                     ตอนต่อไป &rarr;
                 </button>
             </div>
             {id && chapterId && (
-                <CommentSection workType="manga" workId={id!} chapterId={chapterId!} />
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    <CommentSection workType="manga" workId={id!} chapterId={chapterId!} />
+                </div>
             )}
             <ReportModal 
                 isOpen={showReport} 

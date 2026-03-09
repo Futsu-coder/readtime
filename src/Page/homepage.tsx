@@ -151,6 +151,26 @@ export function HomePage() {
         setActiveGenre('All');
     };
 
+    const getGenreTagStyle = (genre: string, isActive: boolean) => {
+        const baseStyle = isActive ? activeGenreTag : genreTag;
+        
+        // ดึงสีตามหมวดหมู่ ถ้าไม่มีให้ใช้สีเทาอ่อนตามค่าเริ่มต้น
+        const genreColor = genreColors[genre] || '#efefef';
+        
+        let backgroundColor = genreColor;
+        if (genre === 'All' && isActive) {
+            backgroundColor = '#9b67bd'; 
+        }
+
+        const color = (genre === 'All' && isActive) ? 'white' : '#222';
+
+        return {
+            ...baseStyle,
+            backgroundColor: backgroundColor,
+            color: color
+        };
+    };
+
     if (loading) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>กำลังโหลดข้อมูลหนังสือ...</div>;
 
     return (
@@ -225,7 +245,7 @@ export function HomePage() {
                 <section style={sectionMargin}>
                     <div style={sectionHeader}><div style={titleGroup}><div style={purpleLine}></div><h3 style={sectionTitle}>ผลงานล่าสุด</h3></div><span style={viewMore}>ดูทั้งหมด {'>'}</span></div>
                     {displayedWorks.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>ยังไม่มีผลงานในหมวดหมู่นี้ 😅</div>
+                        <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>ยังไม่มีผลงานในหมวดหมู่นี้ </div>
                     ) : (
                         <div style={bookGrid}>{displayedWorks.map((work) => (<NovelCard key={`${work.type}-${work.id}`} novel={work} />))}</div>
                     )}

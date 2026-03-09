@@ -199,14 +199,14 @@ export function Navbar() {
                                         <div>
                                             <div style={{ fontWeight: 'bold', color: '#333', fontSize: '0.95rem' }}>{result.title}</div>
                                             <div style={{ fontSize: '0.8rem', color: result.type === 'novel' ? '#9b67bd' : '#ff7b00' }}>
-                                                {result.type === 'novel' ? '📖 นิยาย' : '🎨 การ์ตูน'}
+                                                {result.type === 'novel' ? ' นิยาย' : ' การ์ตูน'}
                                             </div>
                                         </div>
                                     </div>
                                 ))
                             ) : (
                                 !isSearching && searchTerm.length > 1 && (
-                                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่พบผลงานที่ค้นหา... 😅</div>
+                                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่พบผลงานที่ค้นหา</div>
                                 )
                             )}
                         </div>
@@ -221,26 +221,7 @@ export function Navbar() {
                                     <Shield size={22} strokeWidth={1.5} color="#e11d48" />
                                 </div>
                             )}
-
-                            <div style={{ position: 'relative' }} ref={notiRef}>
-                                <div style={iconBadge} onClick={() => { setShowNoti(!showNoti); setShowProfile(false); }}>
-                                    <Bell size={22} strokeWidth={1.5} color="#333" />
-                                    <div style={redDot}></div>
-                                </div>
-                                {showNoti && (
-                                    <div style={notiDropdown}>
-                                        <div style={dropdownHeader}>การแจ้งเตือน</div>
-                                        <div style={notiItem}>
-                                            <div style={notiCircle}></div>
-                                            <div style={notiTextGroup}>
-                                                <p style={notiMainText}><b>ระบบ</b> ยินดีต้อนรับสู่ READTIME!</p>
-                                                <p style={notiSubText}>เพิ่งจะ</p>
-                                            </div>
-                                        </div>
-                                        <div style={dropdownFooter} onClick={() => setShowNoti(false)}>ดูทั้งหมด</div>
-                                    </div>
-                                )}
-                            </div>                           
+                           
                             <div style={iconBadge} onClick={() => handleNavigate('/dashborad')} title="จัดการงานเขียน">
                                 <Pencil size={22} strokeWidth={1.5} color="#333" />
                             </div>                            
@@ -325,15 +306,6 @@ const navRightSide: React.CSSProperties = { display: 'flex', gap: '15px', alignI
 const iconBadge: React.CSSProperties = { position: 'relative', cursor: 'pointer', padding: '8px', transition: '0.2s', borderRadius: '50%' };
 const redDot: React.CSSProperties = { position: 'absolute', top: '8px', right: '8px', width: '8px', height: '8px', backgroundColor: '#ff4d4f', borderRadius: '50%', border: '2px solid white' };
 const avatarWrapper: React.CSSProperties = { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#9b67bd', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(155, 103, 189, 0.3)' };
-
-const notiDropdown: React.CSSProperties = { position: 'absolute', top: '55px', right: '-10px', width: '280px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 2000, overflow: 'hidden', border: '1px solid #f0f0f0' };
-const dropdownHeader: React.CSSProperties = { padding: '12px 15px', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #f5f5f5', color: '#333' };
-const notiItem: React.CSSProperties = { display: 'flex', padding: '12px 15px', gap: '12px', cursor: 'pointer', borderBottom: '1px solid #fafafa' };
-const notiCircle: React.CSSProperties = { width: '8px', height: '8px', backgroundColor: '#9b67bd', borderRadius: '50%', marginTop: '6px', flexShrink: 0 };
-const notiTextGroup: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '2px' };
-const notiMainText: React.CSSProperties = { margin: 0, fontSize: '13px', color: '#444', lineHeight: '1.4' };
-const notiSubText: React.CSSProperties = { margin: 0, fontSize: '11px', color: '#aaa' };
-const dropdownFooter: React.CSSProperties = { padding: '10px', textAlign: 'center', fontSize: '12px', color: '#9b67bd', cursor: 'pointer', fontWeight: '500' };
 
 const profileDropdown: React.CSSProperties = { position: 'absolute', top: '55px', right: '0', width: '230px', backgroundColor: '#fff', borderRadius: '15px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', zIndex: 2000, overflow: 'hidden', border: '1px solid #f0f0f0' };
 const profileHeader: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '15px', gap: '15px', backgroundColor: '#fafafa' };

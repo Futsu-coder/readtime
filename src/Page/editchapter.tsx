@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ChevronLeft, Globe, FileEdit } from 'lucide-react'; // 🌟 เพิ่ม Icon
-import { API_URL } from "../client"; 
+import { useNavigate, useParams } from 'react-router-dom';
+import { client } from "../client";
 import { RichTextEditor } from "../components/RichtextEditor";
 
 export function EditChapterPage() {
@@ -37,14 +36,15 @@ export function EditChapterPage() {
                     if (cData.chapter) { 
                         setTitle(cData.chapter.title); 
                         setContent(cData.chapter.content); 
+                        // ถ้า backend มีส่งสถานะ publish มาด้วย สามารถเซ็ตตรงนี้ได้เลย เช่น
+                        // setIsPublished(cData.chapter.isPublished || false);
                     }
                 } else { 
-                    alert("ไม่พบข้อมูลตอนนิยาย");
-                    navigate(`/novel/${id}/edit`); 
+                    navigate(`/novel/${id}`); 
                 }
             } catch (err) {
                 console.error(err);
-                setStatusMsg('โหลดข้อมูลไม่สำเร็จ'); 
+                setStatus('❌ ไม่สามารถโหลดข้อมูลได้'); 
             } finally { 
                 setIsLoading(false); 
             }
@@ -52,137 +52,153 @@ export function EditChapterPage() {
         fetchChapterData();
     }, [id, chapterId, navigate]);
 
-    // 🌟 รับค่า targetStatus จากปุ่มที่กด (draft หรือ published)
-    const handleUpdate = async (targetStatus: 'published' | 'draft', e: React.MouseEvent) => {
-        e.preventDefault();
+    const handleTogglePublish = () => {
+        if (!isPublished) setShowPublishModal(true);
+        else setIsPublished(false);
+    };
+
+    const handleUpdate = async () => {
         if (!title || !content || content === '<p><br></p>') {
-            return setStatusMsg('⚠️ กรุณากรอกชื่อตอนและเนื้อหาให้ครบ');
+            setShowSaveConfirm(false);
+            return alert('กรุณากรอกชื่อตอนและเนื้อหาให้ครบ');
         }
         
-        setIsSaving(true);
-        setStatusMsg(targetStatus === 'draft' ? 'กำลังบันทึกเป็นแบบร่าง...' : 'กำลังเผยแพร่...');
-        
+        setStatus('กำลังบันทึกการแก้ไข...');
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/api/protected/novels/${id}/chapters/${chapterId}`, {
-                method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                // 🌟 ส่ง status ไปด้วย
-                body: JSON.stringify({ title, content, status: targetStatus })
-            });
-
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const res = await client.api.protected.novels[':id'].chapters[':chapterID'].$put(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                { param: { id: id!, chapterID: chapterId! }, json: { title, content } } as any,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            
             if (res.ok) { 
-                alert(`✅ บันทึกเป็น "${targetStatus === 'draft' ? 'แบบร่าง' : 'เผยแพร่'}" สำเร็จ!`); 
-                navigate(`/dashborad`); 
+                setShowSaveConfirm(false);
+                setShowSuccessOption(true);
             } else { 
-                const data = await res.json() as any;
-                setStatusMsg(`❌ อัปเดตไม่สำเร็จ: ${data.error || 'เกิดข้อผิดพลาด'}`); 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                setStatus(`❌ ${(await res.json() as any).error}`);
+                setShowSaveConfirm(false);
             }
         } catch (err) {
             console.error(err);
-            setStatusMsg('❌ เกิดข้อผิดพลาดในการเชื่อมต่อ Server'); 
-        } finally {
-            setIsSaving(false);
+            setStatus('❌ เชื่อมต่อ Server ไม่ได้');
+            setShowSaveConfirm(false);
         }
     };
 
-    if (isLoading) return <div style={{ textAlign: 'center', marginTop: '50px', color: '#9b67bd', fontSize: '1.2rem' }}>⏳ กำลังโหลดข้อมูลตอน...</div>;
+    if (isLoading) return <div style={{ textAlign: 'center', marginTop: '50px', fontFamily: "'Kanit', 'Sarabun', sans-serif" }}>กำลังโหลดข้อมูล...</div>;
 
     return (
         <div style={pageContainer}>
-            <div style={headerNav}>
-                <button type="button" onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
-            </div>
-            
             <div style={mainContent}>
                 <div style={sectionWhite}>
-                    <h3 style={{ margin: '0 0 20px 0', color: '#666', fontSize: '1.2rem' }}>
-                        แก้ไขเนื้อหาตอน <span style={{ color: '#bc7df2' }}>({novelTitle})</span>
-                    </h3>                   
-                    
+                    <h3 style={{ margin: '0 0 20px 0', color: '#666' }}>แก้ไขเรื่อง: {novelTitle || 'กำลังโหลด...'}</h3>                   
                     <div style={titleRow}>
-                        <span style={chapterLabel}>ชื่อตอน<span style={{color: 'red'}}>*</span></span>
+                        <span style={chapterLabel}>ชื่อตอน</span>
                         <input 
                             type="text" 
-                            placeholder="เช่น ตอนที่ 1: จุดเริ่มต้น"
+                            placeholder="เช่น ตอนที่ 0: prolough"
                             value={title} 
                             onChange={(e) => setTitle(e.target.value)}
                             style={titleInput} 
                         />
                     </div>
-                    
                     <div style={{ marginBottom: '30px' }}>
-                        <span style={{ ...chapterLabel, display: 'block', marginBottom: '10px' }}>เนื้อหานิยาย<span style={{color: 'red'}}>*</span></span>
                         <RichTextEditor 
                             value={content} 
                             onChange={setContent} 
                             height="500px" 
-                            placeholder="เขียนเนื้อหานิยายที่นี่..."
+                            placeholder="แก้ไขเนื้อหานิยายที่นี่"
                         />
                     </div>
 
-                    {statusMsg && (
-                        <div style={{ 
-                            background: statusMsg.includes('✅') ? '#d4edda' : statusMsg.includes('⚠️') ? '#fff3cd' : '#fff0f3', 
-                            color: statusMsg.includes('✅') ? '#155724' : statusMsg.includes('⚠️') ? '#856404' : '#d63384', 
-                            padding: '15px', borderRadius: '12px', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' 
-                        }}>
-                            {statusMsg}
-                        </div>
-                    )}
-
-                    <div style={actionButtons}>
-                        <Link to={`/dashborad`} style={btnGray}>
-                            ยกเลิก
-                        </Link>
-                        
-                        {/* 🌟 2 ปุ่ม แบบร่าง กับ เผยแพร่ */}
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button 
-                                type="button" 
-                                disabled={isSaving} 
-                                onClick={(e) => handleUpdate('draft', e)}
-                                style={{...btnOutline, opacity: isSaving ? 0.5 : 1}}
-                            >
-                                <FileEdit size={18} /> บันทึกเป็นร่าง
-                            </button>
+                    <div style={statusRowContainer}>
+                        <span style={statusTitle}>เผยแพร่ :</span>
+                        <div style={statusWhiteCard}>
+                            <div style={toggleSection}>
+                                <div style={toggleItem}>
+                                    <span style={toggleLabel}>สถานะ</span>
+                                    <div onClick={handleTogglePublish} style={{...switchBase, backgroundColor: isPublished ? '#4caf50' : '#ddd'}}>
+                                        <div style={{...switchThumb, left: isPublished ? '22px' : '2px'}} />
+                                    </div>
+                                    <span style={{color: isPublished ? '#4caf50' : '#999', fontSize: '14px', minWidth: '60px'}}>{isPublished ? 'เผยแพร่' : 'ร่าง'}</span>
+                                </div>
+                            </div>
                             
-                            <button 
-                                type="button" 
-                                disabled={isSaving} 
-                                onClick={(e) => handleUpdate('published', e)}
-                                style={{...btnPurple(isSaving), display: 'flex', alignItems: 'center', gap: '8px'}}
-                            >
-                                <Globe size={18} /> อัปเดต & เผยแพร่
-                            </button>
+                            <div style={actionButtons}>
+                                <span style={{ marginRight: '15px', color: '#9b67bd', alignSelf: 'center' }}>{status}</span>
+                                <button style={btnGray} onClick={() => navigate('/dashborad')}>ยกเลิก</button>
+                                <button style={btnPurple} onClick={() => setShowSaveConfirm(true)}>อัปเดตเนื้อหา</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Modals เหมือนหน้า addchapter */}
+            {showPublishModal && (
+                <div style={modalOverlay}>
+                    <div style={modalContainer}>
+                        <h2 style={modalTitle}>ต้องการเผยแพร่หรือไม่</h2>
+                        <div style={modalActionArea}>
+                            <button style={btnPublishNow} onClick={() => { setIsPublished(true); setShowPublishModal(false); }}>เผยแพร่เลย</button>
+                            <button style={btnKeepDraft} onClick={() => { setIsPublished(false); setShowPublishModal(false); }}>เป็นร่างไว้ก่อน</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showSaveConfirm && (
+                <div style={modalOverlay}>
+                    <div style={modalContainer}>
+                        <h2 style={modalTitle}>ยืนยันการบันทึกการแก้ไข?</h2>
+                        <div style={modalActionArea}>
+                            <button style={btnPublishNow} onClick={handleUpdate}>ตกลง</button>
+                            <button style={btnKeepDraft} onClick={() => setShowSaveConfirm(false)}>ยกเลิก</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showSuccessOption && (
+                <div style={modalOverlay}>
+                    <div style={modalContainer}>
+                        <h2 style={modalTitle}>อัปเดตสำเร็จ!</h2>
+                        <div style={modalActionArea}>
+                            <button style={btnPublishNow} onClick={() => navigate('/dashborad')}>กลับไปหน้า Dashboard</button>
+                            <button style={btnKeepDraft} onClick={() => navigate(`/novel/${id}`)}>ดูรายละเอียดนิยาย</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
+/// --- style ---
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', padding: '40px 20px', fontFamily: "'Kanit', 'Sarabun', sans-serif" };
-const headerNav = { maxWidth: '1000px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
 const mainContent = { maxWidth: '1000px', margin: '0 auto' };
 const sectionWhite = { backgroundColor: '#fff', padding: '40px', borderRadius: '25px', border: '1px solid #f0f0f0', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' };
 const titleRow = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px' };
-const chapterLabel = { color: '#bc7df2', fontSize: '18px', fontWeight: 'bold' };
-const titleInput: React.CSSProperties = { flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid #bfbfbf', fontSize: '16px', outline: 'none', color: '#333', background: '#fff' };
-const actionButtons = { display: 'flex', justifyContent: 'space-between', marginTop: '20px', alignItems: 'center', borderTop: '1px dashed #eee', paddingTop: '25px' };
-const btnGray: React.CSSProperties = { padding: '12px 35px', borderRadius: '20px', border: 'none', backgroundColor: '#eee', color: '#666', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', textDecoration: 'none', transition: '0.2s' };
-const btnOutline: React.CSSProperties = { padding: '12px 25px', borderRadius: '20px', border: '2px solid #ddd', backgroundColor: '#fff', color: '#666', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' };
-const btnPurple = (isLoading: boolean): React.CSSProperties => ({ 
-    padding: '12px 30px', borderRadius: '20px', border: 'none', 
-    backgroundColor: isLoading ? '#ccc' : '#bc7df2', 
-    color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', 
-    fontWeight: 'bold', fontSize: '16px', 
-    boxShadow: isLoading ? 'none' : '0 4px 15px rgba(188, 125, 242, 0.4)', transition: '0.2s' 
-});
+const chapterLabel = { color: '#bc7df2', fontSize: '20px', fontWeight: 'bold' };
+const titleInput: React.CSSProperties = { flex: 1, padding: '15px 20px', borderRadius: '15px', border: '1px solid #bfbfbf', fontSize: '16px', outline: 'none' , color:'black' , background:'white' };
+const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '60px' };
+const statusTitle = { color: '#bc7df2', fontWeight: 'bold', fontSize: '20px' };
+const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fcfcfc', border: '1px solid #eee', borderRadius: '25px', padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const toggleSection = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
+const toggleItem = { display: 'flex', alignItems: 'center', gap: '15px' };
+const toggleLabel = { fontSize: '16px', color: '#666', width: '60px', fontWeight: 'bold' };
+const switchBase: React.CSSProperties = { width: '42px', height: '22px', borderRadius: '20px', position: 'relative', cursor: 'pointer', transition: '0.3s' };
+const switchThumb: React.CSSProperties = { width: '18px', height: '18px', backgroundColor: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', transition: '0.3s', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' };
+const actionButtons = { display: 'flex', gap: '15px' };
+const btnGray = { padding: '12px 35px', borderRadius: '20px', border: 'none', backgroundColor: '#eee', color: '#666', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', transition: '0.2s' };
+const btnPurple = { padding: '12px 40px', borderRadius: '20px', border: 'none', backgroundColor: '#bc7df2', color: '#fff', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 15px rgba(188, 125, 242, 0.4)', transition: '0.2s' };
+
+const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' };
+const modalContainer: React.CSSProperties = { width: '420px', backgroundColor: '#fff', borderRadius: '35px', padding: '45px 35px', textAlign: 'center', border: '4px solid #bc7df2', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' };
+const modalTitle = { fontSize: '24px', fontWeight: 'bold', color: '#333', marginBottom: '25px' };
+const modalActionArea = { display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '15px' };
+const btnPublishNow: React.CSSProperties = { width: '100%', padding: '15px 0', backgroundColor: '#bc7df2', color: '#fff', border: 'none', borderRadius: '30px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 15px rgba(188, 125, 242, 0.4)' };
+const btnKeepDraft: React.CSSProperties = { width: '60%', padding: '12px 0', backgroundColor: '#f5f5f5', color: '#666', border: 'none', borderRadius: '30px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold' };

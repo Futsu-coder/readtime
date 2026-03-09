@@ -15,6 +15,7 @@ export function Register() {
     const [confrimPssword, setConfirmPassword] = useState('')
     const [message, setMessage] = useState('')
     const [loading, setLoading] = useState(false)
+    const [showSuccess, setShowSuccess] = useState(false)
     
     const handleRegister = async () => {
         setLoading(true)
@@ -31,12 +32,14 @@ export function Register() {
         }
         try {
             const res = await client.api.register.$post({
-                json: { username,password}
+                json: { username, password }
             })
             const data = await res.json() as ApiRespone
             if(res.ok){
-                alert('สมัครสมาชิกสำเร็จ')
-                navigate('/login')
+                setShowSuccess(true)
+                setTimeout(() => {
+                    navigate('/login')
+                }, 2000)
             }
             else {
                 setMessage(`${data.error || 'เกิดข้อผิดพลาด'}`)
@@ -49,7 +52,7 @@ export function Register() {
         }
     }
 
-    // --- Styles (ปรับให้เหมือน Login) ---
+    // --- Styles ---
     const containerStyle = {
         maxWidth: '450px',
         margin: '80px auto',
@@ -61,7 +64,7 @@ export function Register() {
     const logoStyle = {
         fontSize: '32px',
         fontWeight: 'bold',
-        color: '#A865B5', // สีม่วงตามโลโก้
+        color: '#A865B5',
         marginBottom: '5px',
         display: 'flex',
         alignItems: 'center',
@@ -103,7 +106,8 @@ export function Register() {
         background: 'transparent',
         fontSize: '16px',
         outline: 'none',
-        padding: '5px 0'
+        padding: '5px 0',
+        color: '#333'
     }
 
     const registerButtonStyle = {
@@ -134,16 +138,36 @@ export function Register() {
         fontWeight: 'bold'
     }
 
+    const modalOverlayStyle = {
+        position: 'fixed' as const,
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+    }
+
+    const modalContentStyle = {
+        background: 'white',
+        padding: '40px',
+        borderRadius: '20px',
+        textAlign: 'center' as const,
+        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+        minWidth: '280px'
+    }
+
     return (
         <div style={containerStyle}>
-            {/* Logo Section */}
             <div style={logoStyle}>
                 READTIME <span style={{ fontSize: '24px' }}>✎</span>
             </div>
             <h3 style={subTitleStyle}>Register</h3>
             <p style={descriptionStyle}>สมัครสมาชิกใหม่ ReadTime!</p>
             
-            {/* Input Fields */}
             <div style={inputGroupStyle}>
                 <label style={labelStyle}>บัญชี</label>
                 <input 
@@ -173,10 +197,8 @@ export function Register() {
                 />
             </div>
             
-            {/* Error Message */}
             {message && <p style={{ color: 'red', fontSize: '14px', margin: '10px 0' }}>{message}</p>}
             
-            {/* Register Button */}
             <button 
                 onClick={handleRegister} 
                 disabled={loading} 
@@ -185,13 +207,22 @@ export function Register() {
                 {loading ? 'กำลังบันทึก...' : 'สมัครสมาชิก'}
             </button>
             
-            {/* Footer Links */}
             <div style={footerLinksStyle}>
                 <span style={{ color: '#666' }}>มีบัญชีอยู่แล้ว?</span>
                 <Link to="/login" style={linkActionStyle}>
                     Log in เลย
                 </Link>
             </div>
+
+            {/* Success Popup */}
+            {showSuccess && (
+                <div style={modalOverlayStyle}>
+                    <div style={modalContentStyle}>
+                        <h2 style={{ color: '#9163B6', margin: '0 0 10px 0' }}>สำเร็จ!</h2>
+                        <p style={{ color: '#555' }}>สมัครสมาชิกสำเร็จแล้วจ้า</p>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
