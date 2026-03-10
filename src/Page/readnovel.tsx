@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { client,API_URL } from "../client";
+import { client, API_URL } from "../client";
 import { CommentSection } from "../components/comment";
 import 'react-quill-new/dist/quill.snow.css';
+import { Flag } from 'lucide-react';
+import { ReportModal } from '../components/ReportModal';
 
 interface ChapterContent {
     id: number;
@@ -23,6 +25,9 @@ export function Readchapterpage() {
     const [allChapters, setAllChapters] = useState<ChapterItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [showReport, setShowReport] = useState(false);
+
+    // ข้อมูลนิยายจำลอง (Mock) เพื่อให้แสดงผลได้สวยเหมือนตัวอย่าง
 
     useEffect(() => {
         const fetchAllChapters = async () => {
@@ -31,12 +36,9 @@ export function Readchapterpage() {
                 const res = await client.api.public.novels[':id'].$get({ 
                     param: { id } 
                 });
-                
                 if (res.ok) {
                     const data = await res.json();
-                    if ('chapters' in data) {
-                        setAllChapters(data.chapters);
-                    }
+                    if ('chapters' in data) setAllChapters(data.chapters);
                 }
             } catch (err) {
                 console.error("Error fetching TOC:", err);
@@ -48,37 +50,23 @@ export function Readchapterpage() {
     useEffect(() => {
         const fetchContent = async () => {
             if (!id || !chapterId) return;
-            
             setLoading(true);
             setError("");
-            
             try {
                 const res = await client.api.public.novels[':id'].chapters[':chapterID'].$get({
-                    param: { 
-                        id: id,            
-                        chapterID: chapterId 
-                    }
+                    param: { id, chapterID: chapterId }
                 });
-
                 if (res.ok) {
                     const data = await res.json();
-                    if ('chapter' in data) {
-                        setChapter(data.chapter);
-                    } else {
-                        setError("ไม่พบข้อมูลเนื้อหาใน Response");
-                    }
-                } else {
-                    setError("ไม่พบเนื้อหาตอน");
-                }
-
+                    if ('chapter' in data) setChapter(data.chapter);
+                    else setError("ไม่พบข้อมูลเนื้อหา");
+                } else setError("ไม่พบเนื้อหาตอน");
             } catch (err) {
-                console.error(err);
                 setError("เชื่อมต่อ Server ไม่ได้");
             } finally {
                 setLoading(false);
             }
         };
-        
         fetchContent();
         window.scrollTo(0, 0);
     }, [id, chapterId]);
@@ -87,7 +75,6 @@ export function Readchapterpage() {
         const saveHistory = async () => {
             const token = localStorage.getItem('token');
             if (!token || !id || !chapterId) return; 
-
             try {
                 await fetch(`${API_URL}/api/protected/history`, {
                     method: 'POST',
@@ -105,12 +92,10 @@ export function Readchapterpage() {
                 console.error('Save history failed:', err);
             }
         };
-        
         saveHistory();
     }, [id, chapterId]);
 
-    const currentIdNum = Number(chapterId);
-    const currentIndex = allChapters.findIndex((c) => c.id === currentIdNum);
+    const currentIndex = allChapters.findIndex((c) => c.id === Number(chapterId));
     const prevChapter = currentIndex > 0 ? allChapters[currentIndex - 1] : undefined;
     const nextChapter = currentIndex < allChapters.length - 1 ? allChapters[currentIndex + 1] : undefined;
 
@@ -119,44 +104,88 @@ export function Readchapterpage() {
     if (!chapter) return null;
 
     return (
-        <div style={{ fontFamily: "'Sarabun', sans-serif", background: '#f9f9f9', minHeight: '100vh' }}>
-.            
-            <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', padding: '40px', minHeight: '100vh', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
-                <div style={{ borderBottom: '1px solid #eee', paddingBottom: '20px', marginBottom: '30px' }}>
-                    <h1 style={{ margin: '0 0 10px 0', color: '#333' }}>{chapter.title}</h1>
-                    <Link to={`/novel/${id}`} style={{ textDecoration: 'none', color: '#888' }}>&larr; กลับไปที่หน้าหลัก</Link>
+        <div style={{ background: '#fcfcfc', minHeight: '100vh', paddingTop: '40px', paddingBottom: '40px', fontFamily: "'Sarabun', sans-serif" }}>
+            
+            {/* กล่องเนื้อหาหลักตามรูปภาพ image_e8d395.png */}
+            <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', padding: '50px 60px', borderRadius: '4px', border: '1px solid #eee' }}>
+                
+                {/* Header Section */}
+                <div style={{ marginBottom: '30px' }}>
+                    <h1 style={{ fontSize: '36px', fontWeight: 'bold', margin: '0 0 10px 0', color: '#333' }}>{chapter.title}</h1>
+                    <div style={{ borderBottom: '1px solid #eee', marginTop: '20px' }}></div>
                 </div>
 
+                {/* ปุ่มรายงานตัวเล็กด้านซ้าย */}
+                <div style={{ marginBottom: '20px' }}>
+                    <button 
+                        onClick={() => setShowReport(true)}
+                        style={{ background: '#fff1f0', border: '1px solid #ffa39e', color: '#e11d48', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                    >
+                        <Flag size={12} /> รายงานตอนนี้
+                    </button>
+                </div>
+
+                {/* เนื้อหา (Content) จัดกึ่งกลางตามรูป image_e8d758.png */}
                 <div 
                     className="ql-editor" 
-                    style={{ fontSize: '1.2rem', lineHeight: '1.8', color: '#000000', marginBottom: '50px', padding: '0' }}
+                    style={{ 
+                        fontSize: '1.2rem', 
+                        lineHeight: '2.4', 
+                        color: '#333', 
+                        textAlign: 'center', 
+                        padding: '40px 0 80px 0',
+                        whiteSpace: 'pre-wrap' 
+                    }}
                     dangerouslySetInnerHTML={{ __html: chapter.content }}
                 />
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', paddingTop: '30px' }}>
+                {/* ปุ่มนำทางท้ายบท (จาก image_e8d395.png และ image_e8d758.png) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '30px', borderTop: '1px solid #eee' }}>
+                    <div style={{ flex: 1 }}>
+                        {prevChapter && (
+                            <button 
+                                onClick={() => navigate(`/novel/${id}/chapters/${prevChapter.id}`)}
+                                style={{ background: '#7b55c1', border: 'none', color: 'white', cursor: 'pointer', fontSize: '15px' }}
+                            >
+                                ตอนก่อนหน้า
+                            </button>
+                        )}
+                    </div>
+                    
                     <button 
-                        disabled={!prevChapter}
-                        onClick={() => prevChapter && navigate(`/novel/${id}/chapters/${prevChapter.id}`)}
-                        style={{ visibility: prevChapter ? 'visible' : 'hidden', padding: '10px 20px', cursor: 'pointer', background: 'white', border: '1px solid #ddd', borderRadius: '4px' }}
+                        onClick={() => navigate(`/novel/${id}`)}
+                        style={{ color: '#888', background: 'none', border: 'none', cursor: 'pointer', fontSize: '15px' }}
                     >
-                        &larr; ตอนก่อนหน้า
-                    </button>
-
-                    <button onClick={() => navigate(`/novel/${id}`)} style={{ cursor: 'pointer', background: 'transparent', border: 'none', color: '#888' }}>
                         สารบัญ
                     </button>
-                    <button 
-                        disabled={!nextChapter}
-                        onClick={() => nextChapter && navigate(`/novel/${id}/chapters/${nextChapter.id}`)}
-                        style={{ visibility: nextChapter ? 'visible' : 'hidden', padding: '10px 20px', cursor: 'pointer', background: '#6a4c93', color: 'white', border: 'none', borderRadius: '4px' }}
-                    >
-                        ตอนต่อไป &rarr;
-                    </button>
+
+                    <div style={{ flex: 1, textAlign: 'right' }}>
+                        {nextChapter && (
+                            <button 
+                                onClick={() => navigate(`/novel/${id}/chapters/${nextChapter.id}`)}
+                                style={{ background: '#7b55c1', color: 'white', border: 'none', padding: '10px 25px', borderRadius: '6px', cursor: 'pointer', fontSize: '15px' }}
+                            >
+                                ตอนต่อไป →
+                            </button>
+                        )}
+                    </div>
                 </div>
+
+                {/* ส่วนของ CommentSection (รักษาระบบเดิมไว้) */}
+                <div style={{ marginTop: '80px' }}>
                     {id && chapterId && (
                         <CommentSection workType="novel" workId={id!} chapterId={chapterId!} />
                     )}
+                </div>
             </div>
+
+            <ReportModal 
+                isOpen={showReport} 
+                onClose={() => setShowReport(false)} 
+                workId={Number(id)} 
+                workType="novel" 
+                chapterTitle={chapter.title}
+            />
         </div>
     );
 }

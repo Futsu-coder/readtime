@@ -1,23 +1,43 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../client"; 
 import { RichTextEditor } from "../components/RichtextEditor";
-import { ChevronLeft, Plus } from 'lucide-react';
+import { ChevronLeft, Plus, Globe, FileEdit } from 'lucide-react'; 
 
 export function CreateMangaPage() {
     const navigate = useNavigate();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("Action");
+    const [category, setCategory] = useState("");
     const [coverFile, setCoverFile] = useState<File | null>(null);
     const [coverPreview, setCoverPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [errorMsg, setErrorMsg] = useState("");
     const [statusMsg, setStatusMsg] = useState("");
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { /* เหมือนเดิม */
+    // 🌟 คงฟังก์ชันดึงหมวดหมู่จาก DB ไว้ (จากไฟล์หลัก)
+    const [categoriesList, setCategoriesList] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/public/categories`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.categories && data.categories.length > 0) {
+                        setCategoriesList(data.categories);
+                        setCategory(data.categories[0]); 
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching categories:", err);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { 
          const file = e.target.files?.[0];
          if (file && file.type.startsWith("image/")) {
              setCoverFile(file);
@@ -25,23 +45,26 @@ export function CreateMangaPage() {
          }
     };
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // 🌟 คง Logic การสร้างมังงะ (Draft/Publish) ไว้เหมือนเดิมเป๊ะ
+    const handleCreate = async (saveAsDraft: boolean) => {
         if (!title.trim()) return setErrorMsg("กรุณากรอกชื่อเรื่อง");
-        setIsLoading(true); setStatusMsg("กำลังสร้างมังงะใหม่...");
+        setIsLoading(true); 
+        setStatusMsg(saveAsDraft ? "กำลังบันทึกร่าง..." : "กำลังสร้างมังงะ...");
 
         try {
             const token = localStorage.getItem('token');
+            const targetStatus = saveAsDraft ? 'draft' : 'published';
+
             const res = await fetch(`${API_URL}/api/protected/manga`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                body: JSON.stringify({ title, description, category })
+                body: JSON.stringify({ title, description, category, status: targetStatus })
             });
 
             if (res.ok) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const data = await res.json() as any;
                 if (coverFile && data.id) {
+                    setStatusMsg(" กำลังอัปโหลดรูปปก...");
                     const formData = new FormData();
                     formData.append("cover", coverFile);
                     await fetch(`${API_URL}/api/protected/manga/${data.id}/cover`, {
@@ -51,19 +74,18 @@ export function CreateMangaPage() {
                 navigate('/dashborad');
             } else { setIsLoading(false); setErrorMsg("สร้างไม่สำเร็จ"); }
         } catch (err) { 
-            console.log(err)
-            setIsLoading(false); setErrorMsg("Error"); }
+            console.error(err)
+            setIsLoading(false); setErrorMsg("เกิดข้อผิดพลาด"); }
     };
 
     return (
         <div style={pageContainer}>
+            {/* Header จากไฟล์หลัก (มีปุ่มย้อนกลับ) */}
             <div style={headerNav}>
-                <button type="button" onClick={() => navigate(-1)} style={backBtn}>
-                    <ChevronLeft size={20} /> ย้อนกลับ
-                </button>
             </div>
 
-            <form onSubmit={handleCreate} style={mainContent}>
+            {/* Main Content ใช้โครงสร้าง layout จากไฟล์ Test */}
+            <div style={mainContent}>
                 <div style={sectionWhite}>
                     <div style={flexRow}>
                         <div style={{ position: 'relative' }}>
@@ -73,7 +95,8 @@ export function CreateMangaPage() {
                                     backgroundImage: coverPreview ? `url(${coverPreview})` : 'none',
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
-                                    border: coverPreview ? 'none' : '2px dashed #eee'
+                                    // ใช้สีเส้นประจากไฟล์ Test
+                                    border: coverPreview ? 'none' : '2px dashed #bc7df2'
                                 }} 
                                 onClick={() => fileInputRef.current?.click()}
                             >
@@ -109,16 +132,30 @@ export function CreateMangaPage() {
                                 <select 
                                     value={category} 
                                     onChange={(e) => setCategory(e.target.value)} 
-                                    style={{...textInput, appearance: 'auto', color: '#333'}}
+                                    // ปรับ Style Select ตามไฟล์ Test
+                                    style={{
+                                        ...textInput, 
+                                        width: '100%', 
+                                        appearance: 'auto', 
+                                        paddingRight: '40px',
+                                        color: '#333', 
+                                        cursor: 'pointer'
+                                    }}
                                 >
-                                    <option value="Action">แอคชั่น</option>
-                                    <option value="Fantasy">แฟนตาซี</option>
-                                    <option value="Comedy">ตลก</option>
+                                    {/* ลูปหมวดหมู่จาก DB (Logic เดิม) */}
+                                    {categoriesList.length > 0 ? (
+                                        categoriesList.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))
+                                    ) : (
+                                        <option value="General">กำลังโหลดหมวดหมู่...</option>
+                                    )}
                                 </select>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <div style={{...sectionWhite, marginTop: '20px'}}>
                     <label style={purpleLabel}>เพิ่มเนื้อเรื่องย่อ</label>
                     <div style={{ marginTop: '10px' }}>
@@ -129,27 +166,45 @@ export function CreateMangaPage() {
                             placeholder="เริ่มเขียนเนื้อเรื่องย่อของคุณ..."
                         />
                     </div>
+                    
                     {errorMsg && <div style={errorMessage}>❌ {errorMsg}</div>}
+
+                    {/* ปุ่มกด Action - ใช้ UI Card และ Button Layout จากไฟล์ Test แต่คง Logic handleCreate(true/false) ไว้ */}
                     <div style={statusRowContainer}>
                         <div style={statusWhiteCard}>
-                            <div style={{ flex: 1 }}></div> 
+                            <div style={{ flex: 1, fontSize: '14px', color: '#888' }}>
+                                เลือก "บันทึกเป็นร่าง" ถ้ายังไม่อยากให้ใครเห็นผลงาน
+                            </div>  
                             <div style={actionButtons}>
-                                <button type="button" style={btnGray} onClick={() => navigate(-1)} disabled={isLoading}>ยกเลิก</button>
-                                <button type="submit" style={btnPurple(isLoading)} disabled={isLoading}>
-                                    {isLoading ? (statusMsg || "กำลังสร้างมังงะใหม่...") : "สร้างมังงะเลย"}
+                                 <button 
+                                    type="button" 
+                                    style={{...btnOutline, opacity: isLoading ? 0.5 : 1}} 
+                                    onClick={() => handleCreate(true)} 
+                                    disabled={isLoading}
+                                >
+                                    <FileEdit size={18} /> {isLoading && statusMsg.includes("ร่าง") ? "กำลังบันทึก..." : "บันทึกเป็นแบบร่าง"}
+                                </button>
+                                
+                                <button 
+                                    type="button" 
+                                    style={{...btnPurple(isLoading), display: 'flex', alignItems: 'center', gap: '8px'}} 
+                                    onClick={() => handleCreate(false)} 
+                                    disabled={isLoading}
+                                >
+                                    <Globe size={18} /> {isLoading && !statusMsg.includes("ร่าง") ? "กำลังเผยแพร่..." : "เผยแพร่เลย!"}
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     );
 }
 
+// --- Styles (ผสมผสานระหว่างไฟล์หลัก และ Test) ---
 const pageContainer: React.CSSProperties = { minHeight: '100vh', backgroundColor: '#f9f9f9', fontFamily: "'Kanit', 'Sarabun', sans-serif", padding: '20px' };
 const headerNav = { maxWidth: '900px', margin: '0 auto 20px auto' };
-const backBtn = { background: 'none', border: 'none', color: '#bc7df2', cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: 'bold', fontSize: '16px' };
 const mainContent = { maxWidth: '900px', margin: '0 auto' };
 const sectionWhite = { backgroundColor: '#fff', padding: '30px', borderRadius: '20px', border: '1px solid #f0f0f0', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' };
 const flexRow = { display: 'flex', gap: '40px' };
@@ -160,11 +215,17 @@ const uploadHint = { color: '#bc7df2', fontSize: '14px', fontWeight: 'bold' };
 const inputArea = { flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '20px' };
 const fieldGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
 const purpleLabel = { color: '#bc7df2', fontWeight: 'bold', fontSize: '18px' };
-const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px' };
+
+// ใช้ Style textInput จากไฟล์ Test (มีสีพื้นหลัง f9f9f9)
+const textInput = { padding: '15px 20px', borderRadius: '15px', border: '1.5px solid #eee', outline: 'none', fontSize: '16px', color: '#333', backgroundColor: '#f9f9f9' };
 
 const errorMessage: React.CSSProperties = { color: '#ff4d4f', textAlign: 'center', marginTop: '15px', fontWeight: 'bold' };
 const statusRowContainer: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '20px', marginTop: '30px' };
 const statusWhiteCard: React.CSSProperties = { flex: 1, backgroundColor: '#fff', border: '1px solid #eee', borderRadius: '20px', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' };
-const actionButtons = { display: 'flex', gap: '12px', width: '100%', justifyContent: 'flex-end' };
-const btnGray = { padding: '10px 30px', borderRadius: '15px', border: 'none', backgroundColor: '#666', color: '#fff', cursor: 'pointer', fontWeight: 'bold' };
-const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '10px 30px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });
+const actionButtons = { display: 'flex', gap: '15px', alignItems: 'center' };
+
+// ปุ่ม Outline (บันทึกร่าง)
+const btnOutline: React.CSSProperties = { padding: '12px 25px', borderRadius: '15px', border: '2px solid #ddd', backgroundColor: '#fff', color: '#666', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', transition: '0.2s' };
+
+// ปุ่ม Purple (เผยแพร่) ปรับ padding/style ตามไฟล์ Test
+const btnPurple = (isLoading: boolean): React.CSSProperties => ({ padding: '12px 30px', borderRadius: '15px', border: 'none', backgroundColor: isLoading ? '#ccc' : '#bc7df2', color: '#fff', cursor: isLoading ? 'not-allowed' : 'pointer', fontWeight: 'bold', transition: '0.2s' });

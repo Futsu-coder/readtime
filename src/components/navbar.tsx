@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Pencil, User, BookOpen, Settings, LogOut, Bookmark } from 'lucide-react';
+import { Search, Pencil, User, BookOpen, Settings, LogOut, Bookmark, Shield } from 'lucide-react';
 import { client, API_URL } from "../client"; 
 
 interface SearchResult {
@@ -10,18 +10,61 @@ interface SearchResult {
     cover_image?: string;
 }
 
+// 🌟 สร้าง Interface มารับข้อมูล User
+interface UserProfile {
+    username: string;
+    author: string | null;
+    avatar_url: string | null;
+}
+
 export function Navbar() {
     const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+    const [isAdmin, setIsAdmin] = useState(false); 
+
+    // 🌟 State เก็บข้อมูลโปรไฟล์ผู้ใช้
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
     const [showProfile, setShowProfile] = useState(false);
-    const [showNoti, setShowNoti] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const notiRef = useRef<HTMLDivElement>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchDropdown, setShowSearchDropdown] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
+
+    // 🌟 ดึงข้อมูล User & เช็ค Token ตอนโหลดหน้า
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                // แกะ Token เช็คสิทธิ์
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.role === 'admin' || payload.role === 'super_admin') {
+                    setIsAdmin(true);
+                }
+
+                // 🌟 ยิง API ไปดึงข้อมูลโปรไฟล์ (รูป & นามปากกา)
+                fetch(`${API_URL}/api/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.user) {
+                        setUserProfile({
+                            username: data.user.username,
+                            author: data.user.author,
+                            avatar_url: data.user.avatar_url
+                        });
+                    }
+                })
+                .catch(err => console.error("ไม่สามารถดึงข้อมูลโปรไฟล์มาโชว์ Navbar ได้:", err));
+
+            } catch (e) {
+                console.error("Token parse error", e);
+            }
+        }
+    }, [isLoggedIn]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
@@ -68,9 +111,6 @@ export function Navbar() {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setShowProfile(false);
             }
-            if (notiRef.current && !notiRef.current.contains(event.target as Node)) {
-                setShowNoti(false);
-            }
             if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
                 setShowSearchDropdown(false);
             }
@@ -82,15 +122,29 @@ export function Navbar() {
     const handleNavigate = (path: string) => {
         navigate(path);
         setShowProfile(false);
-        setShowNoti(false);
     };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         setIsLoggedIn(false);
+        setIsAdmin(false); 
+        setUserProfile(null); // เคลียร์ Profile ด้วย
         setShowProfile(false);
         window.location.reload();
         navigate('/');
+    };
+
+    // 🌟 ฟังก์ชันหา Source ของรูปที่จะแสดงบน Navbar
+    const getNavAvatarUrl = () => {
+        if (userProfile?.avatar_url) return `${API_URL}${userProfile.avatar_url}`;
+        if (userProfile?.username) return `https://api.dicebear.com/7.x/bottts/svg?seed=${userProfile.username}`;
+        return null;
+    };
+
+    // 🌟 ฟังก์ชันหาชื่อที่จะแสดง (ถ้านามปากกาไม่มี ให้ใช้ Username)
+    const getDisplayName = () => {
+        if (!userProfile) return "กำลังโหลด...";
+        return userProfile.author || userProfile.username;
     };
 
     return (
@@ -139,14 +193,14 @@ export function Navbar() {
                                         <div>
                                             <div style={{ fontWeight: 'bold', color: '#333', fontSize: '0.95rem' }}>{result.title}</div>
                                             <div style={{ fontSize: '0.8rem', color: result.type === 'novel' ? '#9b67bd' : '#ff7b00' }}>
-                                                {result.type === 'novel' ? '📖 นิยาย' : '🎨 การ์ตูน'}
+                                                {result.type === 'novel' ? ' นิยาย' : ' การ์ตูน'}
                                             </div>
                                         </div>
                                     </div>
                                 ))
                             ) : (
                                 !isSearching && searchTerm.length > 1 && (
-                                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่พบผลงานที่ค้นหา... 😅</div>
+                                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>ไม่พบผลงานที่ค้นหา</div>
                                 )
                             )}
                         </div>
@@ -156,38 +210,41 @@ export function Navbar() {
                 <div style={navRightSide}>
                     {isLoggedIn ? (
                         <>
-                            <div style={{ position: 'relative' }} ref={notiRef}>
-                                <div style={iconBadge} onClick={() => { setShowNoti(!showNoti); setShowProfile(false); }}>
-                                    <Bell size={22} strokeWidth={1.5} color="#333" />
-                                    <div style={redDot}></div>
+                            {isAdmin && (
+                                <div style={iconBadge} onClick={() => handleNavigate('/admin')} title="Admin Dashboard">
+                                    <Shield size={22} strokeWidth={1.5} color="#e11d48" />
                                 </div>
-                                {showNoti && (
-                                    <div style={notiDropdown}>
-                                        <div style={dropdownHeader}>การแจ้งเตือน</div>
-                                        <div style={notiItem}>
-                                            <div style={notiCircle}></div>
-                                            <div style={notiTextGroup}>
-                                                <p style={notiMainText}><b>ระบบ</b> ยินดีต้อนรับสู่ READTIME!</p>
-                                                <p style={notiSubText}>เพิ่งจะ</p>
-                                            </div>
-                                        </div>
-                                        <div style={dropdownFooter} onClick={() => setShowNoti(false)}>ดูทั้งหมด</div>
-                                    </div>
-                                )}
-                            </div>                           
+                            )}
+
                             <div style={iconBadge} onClick={() => handleNavigate('/dashborad')} title="จัดการงานเขียน">
                                 <Pencil size={22} strokeWidth={1.5} color="#333" />
                             </div>                            
                             <div style={{ position: 'relative' }} ref={dropdownRef}>
-                                <div style={avatarWrapper} onClick={() => { setShowProfile(!showProfile); setShowNoti(false); }}>
-                                    <User size={20} color="#fff" />
+                                
+                                <div style={avatarWrapper} onClick={() => setShowProfile(!showProfile)}>
+                                    {getNavAvatarUrl() ? (
+                                        <img src={getNavAvatarUrl()!} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    ) : (
+                                        <User size={20} color="#fff" />
+                                    )}
                                 </div>
+                                
                                 {showProfile && (
                                     <div style={profileDropdown}>
                                         <div style={profileHeader}>
-                                            <div style={profileImgCircle}><User size={18} color="#fff" /></div>
-                                            <span style={profileNameText}>นักอ่าน</span>
+                                            <div style={profileImgCircle}>
+                                                 {getNavAvatarUrl() ? (
+                                                    <img src={getNavAvatarUrl()!} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                                ) : (
+                                                    <User size={18} color="#fff" />
+                                                )}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={profileNameText}>{getDisplayName()}</span>
+                                                {userProfile?.author && <span style={{ fontSize: '12px', color: '#999' }}>@{userProfile.username}</span>}
+                                            </div>
                                         </div>
+                                        
                                         <div style={divider}></div>                                        
                                         <div style={menuItem} onClick={() => handleNavigate('/dashborad')}>
                                             <Pencil size={18} color="#666" /> จัดการงานเขียน
@@ -221,6 +278,7 @@ export function Navbar() {
     );
 }
 
+// 🌟 Styles ผสมผสานกัน (โครงสร้างหลักจาก Test)
 const navbarStyle: React.CSSProperties = { padding: '12px 0', borderBottom: '1px solid #f3f3f3', backgroundColor: '#fff', position: 'sticky', top: 0, zIndex: 1000, fontFamily: "'Kanit', sans-serif" };
 const navInner: React.CSSProperties = { maxWidth: '100%', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 50px' };
 const navLeftSide: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '40px', flexShrink: 0 };
@@ -237,25 +295,16 @@ const searchResultImg: React.CSSProperties = { width: '40px', height: '55px', ob
 
 const navRightSide: React.CSSProperties = { display: 'flex', gap: '15px', alignItems: 'center', flexShrink: 0 };
 const iconBadge: React.CSSProperties = { position: 'relative', cursor: 'pointer', padding: '8px', transition: '0.2s', borderRadius: '50%' };
-const redDot: React.CSSProperties = { position: 'absolute', top: '8px', right: '8px', width: '8px', height: '8px', backgroundColor: '#ff4d4f', borderRadius: '50%', border: '2px solid white' };
 const avatarWrapper: React.CSSProperties = { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#9b67bd', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(155, 103, 189, 0.3)' };
 
-const notiDropdown: React.CSSProperties = { position: 'absolute', top: '55px', right: '-10px', width: '280px', backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 2000, overflow: 'hidden', border: '1px solid #f0f0f0' };
-const dropdownHeader: React.CSSProperties = { padding: '12px 15px', fontWeight: 'bold', fontSize: '14px', borderBottom: '1px solid #f5f5f5', color: '#333' };
-const notiItem: React.CSSProperties = { display: 'flex', padding: '12px 15px', gap: '12px', cursor: 'pointer', borderBottom: '1px solid #fafafa' };
-const notiCircle: React.CSSProperties = { width: '8px', height: '8px', backgroundColor: '#9b67bd', borderRadius: '50%', marginTop: '6px', flexShrink: 0 };
-const notiTextGroup: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '2px' };
-const notiMainText: React.CSSProperties = { margin: 0, fontSize: '13px', color: '#444', lineHeight: '1.4' };
-const notiSubText: React.CSSProperties = { margin: 0, fontSize: '11px', color: '#aaa' };
-const dropdownFooter: React.CSSProperties = { padding: '10px', textAlign: 'center', fontSize: '12px', color: '#9b67bd', cursor: 'pointer', fontWeight: '500' };
-
+// สไตล์ส่วน Dropdown ของ Profile จาก Test
 const profileDropdown: React.CSSProperties = { position: 'absolute', top: '55px', right: '0', width: '230px', backgroundColor: '#fff', borderRadius: '15px', boxShadow: '0 8px 30px rgba(0,0,0,0.15)', zIndex: 2000, overflow: 'hidden', border: '1px solid #f0f0f0' };
 const profileHeader: React.CSSProperties = { display: 'flex', alignItems: 'center', padding: '15px', gap: '12px', backgroundColor: '#fafafa' };
 const profileImgCircle: React.CSSProperties = { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#9b67bd', display: 'flex', justifyContent: 'center', alignItems: 'center' };
 const profileNameText: React.CSSProperties = { fontSize: '16px', color: '#333', fontWeight: 'bold' };
 const divider: React.CSSProperties = { height: '1px', backgroundColor: '#f0f0f0' };
 const menuItem: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 20px', color: '#444', cursor: 'pointer', fontSize: '14px', transition: '0.2s' };
-const logoutBtn: React.CSSProperties = { padding: '15px', textAlign: 'center', color: '#ff4d4f', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', transition: '0.2s' };
+const logoutBtn: React.CSSProperties = { padding: '15px', textAlign: 'center', color: '#ff4d4f', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', transition: '0.2s' }; // จาก Test
 
 const loginBtn: React.CSSProperties = { padding: '10px 20px', backgroundColor: 'transparent', color: '#555', border: '1px solid #ddd', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' };
 const registerBtn: React.CSSProperties = { padding: '10px 20px', backgroundColor: '#9b67bd', color: 'white', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 10px rgba(155, 103, 189, 0.3)' };

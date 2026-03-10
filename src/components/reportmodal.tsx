@@ -1,71 +1,68 @@
-import React, { useState } from 'react';
-import { API_URL } from '../client';
-import { AlertTriangle, X, CheckCircle } from 'lucide-react';
+import React,{ useState } from "react";
+import { API_URL } from "../client";
+import { AlertTriangle, X, CheckCircle } from "lucide-react";
 
-interface ReportModalProps {
+interface ReportModalProps { 
     isOpen: boolean;
     onClose: () => void;
     workId: number;
-    workType: 'novel' | 'manga';
-    chapterTitle?: string | null; // ถ้ารายงานจากหน้าตอน ให้ส่งชื่อ/เลขตอนมาด้วย
+    workType:'novel'|'manga';
+    chapterTitle?: string|null;
 }
 
-export function ReportModal({ isOpen, onClose, workId, workType, chapterTitle }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, workId, workType, chapterTitle}: ReportModalProps){
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
     if (!isOpen) return null;
 
-    const handleSubmit = async () => {
-        if (!reason.trim()) return alert('กรุณาระบุเหตุผลที่รายงาน');
-        setIsSubmitting(true);
-
-        try {
+    const handleSubmit = async() =>{
+        if(!reason.trim())return alert('กรุณาระบุเหตุผลที่รายงาน');
+        setIsSubmitting(true)
+        
+        try{
             const token = localStorage.getItem('token');
-            if (!token) {
-                alert('กรุณาเข้าสู่ระบบก่อนรายงานผลงาน');
+            if(!token){
+                alert('กรุณาเข้าสู่ระบบก่อนรายงาน')
                 setIsSubmitting(false);
                 return;
             }
-
-            // 💡 ทริค: ถ้ากดมาจากหน้าตอน เราจะเอาชื่อตอนไปแปะไว้ข้างหน้าเหตุผลให้แอดมินเห็นชัดๆ
-            const finalReason = chapterTitle 
-                ? `[แจ้งจากตอน: ${chapterTitle}] ${reason}` 
+            const finalReason = chapterTitle
+                ? `[แจ้งจากตอน: ${chapterTitle}] ${reason}`
                 : reason;
-
-            const res = await fetch(`${API_URL}/api/protected/reports`, {
+            
+            const res = await fetch(`${API_URL}/api/protected/reports`,{
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
+                body:JSON.stringify({
                     target_id: workId,
                     target_type: workType,
                     reason: finalReason
                 })
             });
-
-            if (res.ok) {
+            if(res.ok){
                 setIsSuccess(true);
                 setTimeout(() => {
                     setIsSuccess(false);
                     setReason('');
-                    onClose(); // ปิด Pop-up อัตโนมัติ
-                }, 2000);
-            } else {
-                const data = await res.json();
-                alert(`รายงานไม่สำเร็จ: ${data.error}`);
+                    onClose();
+                },2000);
             }
-        } catch (err) {
-            console.error(err);
-            alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');
-        } finally {
+            else{
+                const data = await res.json();
+                alert(`รายงานไม่สำเร็จ:${data.error}`);
+            }
+        }catch(err){
+            console.error(err)
+            alert('เชื่อมต่อไม่สำเร็จ')
+        }finally{
             setIsSubmitting(false);
         }
     };
-
     return (
         <div style={overlayStyle}>
             <div style={modalStyle}>
@@ -88,7 +85,6 @@ export function ReportModal({ isOpen, onClose, workId, workType, chapterTitle }:
                             <span style={{ fontWeight: 'bold', color: '#cf1322' }}>
                                 เป้าหมาย: {workType === 'novel' ? '📖 นิยาย' : '🎨 มังงะ'} 
                             </span>
-                            {/* โชว์ชื่อตอนให้ User เห็นว่าระบบจับตอนให้อัตโนมัติ */}
                             {chapterTitle && <div style={{ fontSize: '14px', color: '#cf1322', marginTop: '5px' }}>📌 ตอน: {chapterTitle}</div>}
                         </div>
 
