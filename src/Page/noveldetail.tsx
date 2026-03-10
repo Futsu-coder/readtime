@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Play, BookOpen, Heart, Flag } from 'lucide-react';
+import { Play, BookOpen, Heart, Flag } from 'lucide-react';
 import { client } from "../client";
 import { NovelImage } from "../components/novelimage";
-import { ReportModal } from '../components/ReportModal';
+import { ReportModal } from '../components/reportmodal';
 
 interface Novel {
     id: number;

@@ -49,7 +49,6 @@ export function NovelCard({ novel }: NovelCardProps) {
                             <span style={{ color: '#ccc', fontWeight: '500', fontSize: '14px' }}>No Cover</span>
                         )}
                     </div>
-                    {/* 🌟 ป้ายประเภท (Manga/Novel) มุมขวาบน[cite: 19] */}
                     <div style={{
                         position: 'absolute',
                         top: '8px',

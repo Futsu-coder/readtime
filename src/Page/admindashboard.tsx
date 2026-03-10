@@ -200,7 +200,7 @@ export function AdminDashboard() {
     };
 
     const handleDeleteBanner = async (id: number) => {
-        if (!window.confirm('🚨 ลบแบนเนอร์นี้ใช่ไหม?')) return;
+        if (!window.confirm('ลบแบนเนอร์นี้ใช่ไหม?')) return;
         try {
             const token = localStorage.getItem('token');
             await fetch(`${API_URL}/api/admin/banners/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
@@ -365,7 +365,7 @@ export function AdminDashboard() {
 
     const handleWarnWork = async () => {
         if (!selectedReport) return;
-        if (!window.confirm("🟡 ต้องการซ่อนผลงานนี้เพื่อให้เจ้าของนำไปแก้ไข (ใบเหลือง) ใช่หรือไม่?")) return;
+        if (!window.confirm("🟡 ต้องการซ่อนผลงานนี้เพื่อให้เจ้าของนำไปแก้ไขใช่หรือไม่?")) return;
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/admin/warn-work`, {
@@ -379,7 +379,7 @@ export function AdminDashboard() {
     };
 
     const handleBanWork = async (workId: number, workType: string) => {
-        if (!window.confirm("🚨 ต้องการระงับผลงานนี้ถาวร (ใบแดง) ใช่หรือไม่?")) return;
+        if (!window.confirm("ต้องการระงับผลงานนี้ถาวรใช่หรือไม่?")) return;
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/admin/ban-work`, {
@@ -396,7 +396,7 @@ export function AdminDashboard() {
     };
 
     const handleUnbanWork = async (workId: number, workType: string) => {
-        if (!window.confirm("🕊️ ต้องการปลดแบนผลงานนี้ให้กลับมาเผยแพร่ได้ตามปกติใช่หรือไม่?")) return;
+        if (!window.confirm("ต้องการปลดแบนผลงานนี้ให้กลับมาเผยแพร่ได้ตามปกติใช่หรือไม่?")) return;
         try {
             const token = localStorage.getItem('token');
             const res = await fetch(`${API_URL}/api/admin/unban-work`, {
@@ -433,7 +433,7 @@ export function AdminDashboard() {
     const renderActionBadge = (action: string | undefined) => {
         switch (action) {
             case 'rejected': return <span style={{...badgeStyle, background: '#f5f5f5', color: '#666', border: '1px solid #d9d9d9'}}>⚪ ปัดตกรายงาน</span>;
-            case 'warned_work': return <span style={{...badgeStyle, background: '#fff7e6', color: '#d46b08', border: '1px solid #ffd591'}}>🟡 แจกใบเหลือง</span>;
+            case 'warned_work': return <span style={{...badgeStyle, background: '#fff7e6', color: '#d46b08', border: '1px solid #ffd591'}}>ตักเตือน</span>;
             case 'banned_work': return <span style={{...badgeStyle, background: '#fff1f0', color: '#e11d48', border: '1px solid #ffa39e'}}>🔴 แบนผลงาน</span>;
             case 'banned_user': return <span style={{...badgeStyle, background: '#fff0f6', color: '#c41d7f', border: '1px solid #ffadd2'}}>⛔ แบนผู้ใช้</span>;
             default: return <span style={{...badgeStyle, background: '#eee'}}>ไม่ทราบ</span>;
@@ -496,7 +496,7 @@ export function AdminDashboard() {
                                 <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>ทั้งหมด ({reports.length}) เรื่อง</h3></div>
                                 <div style={{ overflowX: 'auto', minHeight: '350px' }}>
                                     <table style={tableStyle}>
-                                        <thead><tr style={tableHeadRow}><th style={thStyle}>เป้าหมาย / เจ้าของผลงาน</th><th style={thStyle}>เหตุผลที่รายงาน</th><th style={thStyle}>ผู้แจ้ง / วันที่</th><th style={thStyle}>สถานะ</th><th style={{ ...thStyle, textAlign: 'center', width: '80px' }}>จัดการ</th></tr></thead>
+                                        <thead><tr style={tableHeadRow}><th style={thStyle}>ผลงาน/เจ้าของผลงาน</th><th style={thStyle}>เหตุผลที่รายงาน</th><th style={thStyle}>ผู้แจ้ง / วันที่</th><th style={thStyle}>สถานะ</th><th style={{ ...thStyle, textAlign: 'center', width: '80px' }}>จัดการ</th></tr></thead>
                                         <tbody>
                                             {reports.length === 0 ? ( <tr><td colSpan={5} style={{ padding: '50px', textAlign: 'center', color: '#888' }}><CheckCircle size={40} color="#4caf50" style={{ marginBottom: '10px' }}/><br/>ไม่มีรายการแจ้งเตือน ระบบสงบสุขดีเยี่ยม! 🎉</td></tr> ) : (
                                                 reports.map((report) => (
@@ -510,7 +510,7 @@ export function AdminDashboard() {
                                                                 <button style={btnMoreInfo} onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === report.id ? null : report.id); }}><MoreVertical size={20} /></button>
                                                                 {openDropdownId === report.id && (
                                                                     <div style={dropdownMenu}>
-                                                                        <div style={dropdownItemRed} onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setActionModalOpen(true); setOpenDropdownId(null); }}><Ban size={16} /> ระงับผู้ใช้ / ลบเนื้อหา</div>
+                                                                        <div style={dropdownItemRed} onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setActionModalOpen(true); setOpenDropdownId(null); }}><Ban size={16} /> จัดการรายงาน </div>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -552,10 +552,10 @@ export function AdminDashboard() {
                                     <table style={tableStyle}>
                                         <thead>
                                             <tr style={tableHeadRow}>
-                                                <th style={thStyle}>เป้าหมาย</th>
-                                                <th style={thStyle}>ข้อหา / ผู้แจ้ง</th>
+                                                <th style={thStyle}>ผลงาน/เจ้าของผลงาน</th>
+                                                <th style={thStyle}>เหตุผลที่รายงาน / ผู้แจ้ง</th>
                                                 <th style={thStyle}>บทลงโทษ / เวลาตัดสิน</th>
-                                                <th style={thStyle}>ผู้จัดการ (แอดมิน)</th>
+                                                <th style={thStyle}>ผู้จัดการลงโทษ</th>
                                                 <th style={{ ...thStyle, textAlign: 'center' }}>ลบประวัติ</th>
                                             </tr>
                                         </thead>
@@ -611,7 +611,7 @@ export function AdminDashboard() {
                                 <div style={cardHeader}><h3 style={{ margin: 0, color: '#333', fontSize: '18px' }}>กำลังติดแบนทั้งหมด ({bannedUsers.length}) บัญชี</h3></div>
                                 <div style={{ overflowX: 'auto' }}>
                                     <table style={tableStyle}>
-                                        <thead><tr style={tableHeadRow}><th style={thStyle}>ID / ผู้ใช้</th><th style={thStyle}>บทบาท</th><th style={thStyle}>เหตุผลที่โดนแบน</th><th style={thStyle}>เวลาพ้นโทษ</th><th style={{ ...thStyle, textAlign: 'center' }}>จัดการ</th></tr></thead>
+                                        <thead><tr style={tableHeadRow}><th style={thStyle}>ID / ผู้ใช้</th><th style={thStyle}>บทบาท</th><th style={thStyle}>เหตุผลที่โดนแบน</th><th style={thStyle}>ระยะเวลาการแบน</th><th style={{ ...thStyle, textAlign: 'center' }}>จัดการ</th></tr></thead>
                                         <tbody>
                                             {bannedUsers.length === 0 ? ( <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#888' }}>ไม่มีผู้ใช้ที่ติดแบนในขณะนี้</td></tr> ) : (
                                                 bannedUsers.map(user => (
@@ -636,7 +636,7 @@ export function AdminDashboard() {
                 {activeTab === 'banned_works' && (
                     <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
                         <div style={headerSection}>
-                            <div><h1 style={pageTitle}>จัดการแบนงานเขียน</h1><p style={pageSubtitle}>คลังเก็บผลงานที่ถูกระงับ (ใบแดง 🔴)</p></div>
+                            <div><h1 style={pageTitle}>จัดการแบนงานเขียน</h1><p style={pageSubtitle}>ผลงานที่ถูกระงับ</p></div>
                         </div>
                         {loading ? ( <div style={{ textAlign: 'center', padding: '50px', color: '#e11d48' }}>⏳ กำลังโหลด...</div> ) : (
                             <div style={contentCard}>
@@ -705,7 +705,7 @@ export function AdminDashboard() {
                             {previewUrls.length > 0 && (
                                 <div style={{ marginTop: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '12px', border: '1px dashed #ccc' }}>
                                     <div style={{ fontSize: '14px', color: '#555', marginBottom: '10px', fontWeight: 'bold' }}>
-                                        👀 พรีวิวรูปที่กำลังจะอัปโหลด ({previewUrls.length} รูป):
+                                        พรีวิวรูปที่กำลังจะอัปโหลด ({previewUrls.length} รูป):
                                     </div>
                                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                                         {previewUrls.map((url, idx) => (
@@ -842,17 +842,17 @@ export function AdminDashboard() {
                                     <>
                                         <div style={actionCardWarning} onClick={handleWarnWork}>
                                             <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(212, 107, 8, 0.2)' }}><AlertTriangle size={28} color="#d46b08" /></div>
-                                            <div><h4 style={{ margin: '0 0 5px 0', color: '#d46b08', fontSize: '16px' }}>ตักเตือนผลงาน (ใบเหลือง)</h4><span style={{ fontSize: '13px', color: '#888' }}>ซ่อนเนื้อหาเป็นแบบร่าง</span></div>
+                                            <div><h4 style={{ margin: '0 0 5px 0', color: '#d46b08', fontSize: '16px' }}>ตักเตือนผลงาน</h4><span style={{ fontSize: '13px', color: '#888' }}>ซ่อนเนื้อหาเป็นแบบร่าง</span></div>
                                         </div>
                                         <div style={actionCardDanger} onClick={() => handleBanWork(selectedReport.target_id, selectedReport.target_type)}>
                                             <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(225, 29, 72, 0.2)' }}><BookX size={28} color="#e11d48" /></div>
-                                            <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ระงับผลงานถาวร (ใบแดง)</h4><span style={{ fontSize: '13px', color: '#888' }}>แบนผลงานชิ้นนี้ทันที</span></div>
+                                            <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ระงับผลงานถาวร</h4><span style={{ fontSize: '13px', color: '#888' }}>แบนผลงาน</span></div>
                                         </div>
                                     </>
                                 )}
                                 <div style={actionCardDanger} onClick={() => setBanFormOpen(true)}>
                                     <div style={{ background: '#fff', padding: '10px', borderRadius: '50%', display: 'flex', boxShadow: '0 2px 8px rgba(225, 29, 72, 0.2)' }}><UserX size={28} color="#e11d48" /></div>
-                                    <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ลงโทษผู้ใช้งาน (แบนบัญชี)</h4><span style={{ fontSize: '13px', color: '#888' }}>ระงับการใช้งาน User นี้</span></div>
+                                    <div><h4 style={{ margin: '0 0 5px 0', color: '#e11d48', fontSize: '16px' }}>ลงโทษผู้ใช้งาน</h4><span style={{ fontSize: '13px', color: '#888' }}>แบนบัญชี</span></div>
                                 </div>
                             </div>
                         )}
